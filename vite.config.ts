@@ -65,10 +65,30 @@ export default ({ mode }: { mode: string }) =>
       terserOptions: {
         compress: {
           pure_funcs: ['console.log'],
+          drop_console: true, // 生产环境移除所有 console
+          drop_debugger: true, // 移除 debugger
         },
       },
+      // 启用 CSS 代码分割
+      cssCodeSplit: true,
+      // 优化 chunk 大小警告阈值
+      chunkSizeWarningLimit: 1000,
       rollupOptions: {
         output: {
+          // 优化资源文件命名
+          assetFileNames: (assetInfo) => {
+            const info = assetInfo.name?.split('.')
+            let extType = info?.[info.length - 1]
+            if (/\.(png|jpe?g|gif|svg|ico|webp)(\?.*)?$/.test(assetInfo.name ?? '')) {
+              extType = 'images'
+            } else if (/\.(woff2?|ttf|otf)(\?.*)?$/.test(assetInfo.name ?? '')) {
+              extType = 'fonts'
+            }
+            return `assets/${extType}/[name]-[hash][extname]`
+          },
+          // 优化 chunk 文件命名
+          chunkFileNames: 'assets/js/[name]-[hash].js',
+          entryFileNames: 'assets/js/[name]-[hash].js',
           manualChunks(id) {
             // React 核心库单独分包
             if (id.includes('node_modules/react') || id.includes('node_modules/react-dom')) {

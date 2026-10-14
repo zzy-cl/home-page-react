@@ -1,0 +1,16 @@
+.main-left {
+  width: 50%;
+  margin-right: 10px;
+  transform: translateY(20px);
+}
+
+.main-left.g-hidden {
+  display: none;
+}
+
+@media (max-width: 720px) {
+  .main-left {
+    margin-right: 0;
+    width: 100%;
+  }
+}

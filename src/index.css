@@ -1,0 +1,379 @@
+@import 'tailwindcss';
+
+/*
+ * 呓语小屋 - 液态玻璃设计系统 v2.0（React 移植版）
+ * 由原项目 src/style/style.scss + global.scss 平移而来
+ */
+
+
+
+/* ---------- 字体 ---------- */
+/* 与原站实际生效字体保持一致：Pacifico-Regular 家族实际加载 ZCOOL Addict Italic， */
+/* UnidreamLED / HarmonyOS_Regular 实际加载 SmileySans-Oblique */
+@font-face {
+  font-family: 'Pacifico-Regular';
+  font-display: swap;
+  src: url('./style/font/ZCOOL Addict Italic 01.ttf') format('truetype');
+}
+
+@font-face {
+  font-family: 'UnidreamLED';
+  font-display: swap;
+  src: url('./style/font/SmileySans-Oblique.woff2') format('woff2');
+}
+
+@font-face {
+  font-family: 'HarmonyOS_Regular';
+  font-display: swap;
+  src: url('./style/font/SmileySans-Oblique.woff2') format('woff2');
+}
+
+/* ---------- 全局基础样式 ---------- */
+html,
+body {
+  width: 100%;
+  height: 100%;
+  margin: 0;
+  padding: 0;
+  background-color: #1a1a1a;
+  overflow: hidden;
+  font-family: 'HarmonyOS_Regular', sans-serif;
+}
+
+*,
+a,
+p {
+  margin: 0;
+  padding: 0;
+  user-select: none;
+  text-decoration: none;
+  color: #fff;
+  box-sizing: border-box;
+}
+
+/* 链接悬停效果 - 品牌渐变光泽 */
+a {
+  position: relative;
+  transition: all 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+}
+
+a:hover {
+  color: rgb(100, 180, 255);
+  text-shadow:
+    0 0 20px rgba(100, 180, 255, 0.5),
+    0 0 40px rgba(100, 180, 255, 0.3);
+}
+
+a::after {
+  content: '';
+  position: absolute;
+  bottom: -2px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 0;
+  height: 2px;
+  background: linear-gradient(
+    90deg,
+    transparent,
+    rgba(100, 180, 255, 0.8),
+    rgba(100, 180, 255, 0.8),
+    transparent
+  );
+  border-radius: 2px;
+  transition: width 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+}
+
+a:hover::after {
+  width: 100%;
+}
+
+#root {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 0;
+}
+
+/* ---------- 液态玻璃卡片样式 ---------- */
+.cards {
+  position: relative;
+  border-radius: 20px;
+  background: linear-gradient(
+    135deg,
+    rgba(255, 255, 255, 0.15) 0%,
+    rgba(255, 255, 255, 0.08) 40%,
+    rgba(255, 255, 255, 0.04) 100%
+  );
+  backdrop-filter: blur(20px) saturate(180%);
+  -webkit-backdrop-filter: blur(20px) saturate(180%);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  box-shadow:
+    0 8px 32px rgba(0, 0, 0, 0.2),
+    inset 0 1px 0 rgba(255, 255, 255, 0.3),
+    inset 0 -1px 0 rgba(0, 0, 0, 0.1);
+  transform: scale(1);
+  transition: all 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+  overflow: hidden;
+}
+
+.cards::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  padding: 1px;
+  background: linear-gradient(
+    135deg,
+    rgba(255, 255, 255, 0.4) 0%,
+    transparent 40%,
+    transparent 60%,
+    rgba(255, 255, 255, 0.15) 100%
+  );
+  mask:
+    linear-gradient(#fff 0 0) content-box,
+    linear-gradient(#fff 0 0);
+  mask-composite: xor;
+  -webkit-mask-composite: xor;
+  pointer-events: none;
+  z-index: 1;
+}
+
+.cards::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.1), transparent);
+  transition: left 0.6s ease;
+  pointer-events: none;
+}
+
+.cards:hover {
+  transform: perspective(1000px) rotateX(2deg) rotateY(-2deg) translateY(-4px);
+  box-shadow:
+    0 20px 40px rgba(0, 0, 0, 0.3),
+    0 0 0 1px rgba(255, 255, 255, 0.15),
+    0 0 40px rgba(255, 255, 255, 0.08),
+    inset 0 1px 0 rgba(255, 255, 255, 0.4);
+}
+
+.cards:hover::after {
+  left: 100%;
+}
+
+.cards:active {
+  transform: perspective(1000px) rotateX(1deg) rotateY(-1deg) scale(0.98) translateY(0);
+  box-shadow:
+    0 8px 20px rgba(0, 0, 0, 0.25),
+    inset 0 1px 0 rgba(255, 255, 255, 0.2);
+}
+
+/* ---------- 通用文字工具类 ---------- */
+.text-hidden {
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+/* ---------- 响应式显隐 ---------- */
+@media (min-width: 910px) and (max-width: 1200px) {
+  .sm-hidden {
+    display: none;
+  }
+}
+
+@media (max-width: 720px) {
+  .xs-hidden {
+    display: none;
+  }
+}
+
+/* ---------- keyframes 动画 - 液态效果 ---------- */
+@keyframes fade {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+    filter: blur(4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+    filter: blur(0);
+  }
+}
+
+@keyframes fade-blur-in {
+  0% {
+    filter: blur(30px) brightness(0.2);
+  }
+  50% {
+    filter: blur(10px) brightness(0.6);
+  }
+  100% {
+    filter: blur(0) brightness(1);
+  }
+}
+
+@keyframes fade-blur-main-in {
+  0% {
+    transform: scale(1.3);
+    opacity: 0;
+    filter: blur(10px);
+  }
+  100% {
+    transform: scale(1);
+    opacity: 1;
+    filter: blur(0);
+  }
+}
+
+@keyframes liquid-glow {
+  0%,
+  100% {
+    opacity: 0.5;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 1;
+    transform: scale(1.02);
+  }
+}
+
+@keyframes spin {
+  0% {
+    transform: rotate(0deg);
+  }
+  100% {
+    transform: rotate(360deg);
+  }
+}
+
+@keyframes spin-reverse {
+  0% {
+    transform: rotate(0deg);
+  }
+  100% {
+    transform: rotate(-360deg);
+  }
+}
+
+/* ---------- 自定义鼠标 ---------- */
+#cursor {
+  position: fixed;
+  width: 20px;
+  height: 20px;
+  background: radial-gradient(
+    circle,
+    rgba(255, 255, 255, 0.8) 0%,
+    rgba(255, 255, 255, 0.3) 50%,
+    transparent 100%
+  );
+  border-radius: 50%;
+  opacity: 0.5;
+  z-index: 10086;
+  pointer-events: none;
+  transition: all 0.15s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+  box-shadow: 0 0 20px rgba(255, 255, 255, 0.3);
+}
+
+#cursor.g-hidden {
+  opacity: 0;
+  transform: scale(0.5);
+}
+
+#cursor.active {
+  opacity: 0.8;
+  transform: scale(1.5);
+  background: radial-gradient(
+    circle,
+    rgba(255, 255, 255, 0.9) 0%,
+    rgba(255, 255, 255, 0.4) 50%,
+    transparent 100%
+  );
+  box-shadow: 0 0 30px rgba(255, 255, 255, 0.5);
+}
+
+/* 移动端禁用自定义光标 */
+@media (pointer: coarse) {
+  #cursor {
+    display: none !important;
+  }
+}
+
+@media (max-width: 720px) {
+  #cursor {
+    display: none !important;
+  }
+}
+
+/* ---------- 滚动条样式 ---------- */
+::-webkit-scrollbar,
+scrollbar {
+  width: 8px;
+  height: 8px;
+  background-color: transparent;
+}
+
+::-webkit-scrollbar-thumb,
+scrollbar-thumb {
+  border-radius: 8px;
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.5), rgba(255, 255, 255, 0.3));
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  box-shadow:
+    inset 0 0 6px rgba(0, 0, 0, 0.2),
+    0 0 10px rgba(255, 255, 255, 0.1);
+  transition: all 0.3s ease;
+}
+
+::-webkit-scrollbar-thumb:hover,
+scrollbar-thumb:hover {
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.7), rgba(255, 255, 255, 0.4));
+  box-shadow:
+    inset 0 0 6px rgba(0, 0, 0, 0.2),
+    0 0 15px rgba(255, 255, 255, 0.2);
+}
+
+::-webkit-scrollbar-track,
+scrollbar-track {
+  background: rgba(0, 0, 0, 0.1);
+  border-radius: 8px;
+}
+
+/* ---------- antd Message 全局暗色玻璃化 ---------- */
+/* antd v6 的 message DOM 为 .ant-message-notice > .ant-message-notice-title，
+   v5 的 .ant-message-notice-content 已不存在 */
+.ant-message .ant-message-notice {
+  background: rgba(30, 30, 30, 0.7) !important;
+  -webkit-backdrop-filter: blur(24px) saturate(180%) !important;
+  backdrop-filter: blur(24px) saturate(180%) !important;
+  border-radius: 20px !important;
+  border: 1px solid rgba(255, 255, 255, 0.2) !important;
+  box-shadow:
+    0 8px 32px rgba(0, 0, 0, 0.3),
+    inset 0 1px 0 rgba(255, 255, 255, 0.2) !important;
+}
+
+.ant-message .ant-message-notice-title {
+  color: #efefef !important;
+  white-space: nowrap;
+}
+
+.ant-message .ant-message-notice-title strong {
+  color: #fff;
+}
+
+/* ---------- antd Tooltip 玻璃化 ----------
+   对应原版 .el-popper.is-dark 的样式；antd v6 中气泡内容容器为
+   .ant-tooltip-container（v5 的 .ant-tooltip-inner 已不存在） */
+.ant-tooltip .ant-tooltip-container {
+  background: rgba(40, 40, 40, 0.85) !important;
+  -webkit-backdrop-filter: blur(20px) saturate(180%) !important;
+  backdrop-filter: blur(20px) saturate(180%) !important;
+  border: 1px solid rgba(255, 255, 255, 0.15) !important;
+  border-radius: 12px !important;
+  color: #efefef !important;
+}

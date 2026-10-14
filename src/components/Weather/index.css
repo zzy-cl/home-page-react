@@ -1,0 +1,27 @@
+.weather {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  color: #fff;
+  font-size: 14px;
+  padding: 8px 14px;
+  border-radius: 10px;
+  background-color: rgba(0, 0, 0, 0.3);
+  backdrop-filter: blur(4px);
+  transition: all 0.3s ease;
+}
+
+.weather:hover {
+  background-color: rgba(0, 0, 0, 0.4);
+}
+
+.weather .sm-hidden {
+  display: none;
+}
+
+@media (min-width: 768px) {
+  .weather .sm-hidden {
+    display: inline;
+  }
+}

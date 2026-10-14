@@ -1,0 +1,135 @@
+/* APlayer 深度样式定制（由原 Player.vue 的 :deep 样式平移） */
+
+.player-container {
+  --text-color: #efefef;
+  --bg-opacity-low: rgba(255, 255, 255, 0.15);
+  --bg-opacity-medium: rgba(255, 255, 255, 0.25);
+  --bg-opacity-high: rgba(255, 255, 255, 0.4);
+  --border-radius: 6px;
+  --list-height: 420px;
+}
+
+.player-container .aplayer {
+  width: 80%;
+  border-radius: var(--border-radius);
+  font-family: 'HarmonyOS_Regular', sans-serif !important;
+  margin: 0 auto;
+  background: transparent;
+  box-shadow: none;
+}
+
+/* 主体 */
+.player-container .aplayer .aplayer-body {
+  background-color: transparent;
+}
+
+/* 隐藏封面图 */
+.player-container .aplayer .aplayer-body .aplayer-pic {
+  display: none;
+}
+
+.player-container .aplayer .aplayer-body .aplayer-info {
+  margin-left: 0;
+  padding: 10px 10px 4px 10px;
+  background-color: var(--bg-opacity-high);
+  border-color: transparent !important;
+}
+
+.player-container .aplayer .aplayer-body .aplayer-info .aplayer-music {
+  flex-grow: initial;
+  margin-bottom: 2px;
+  overflow: initial;
+  text-overflow: ellipsis;
+}
+
+.player-container .aplayer .aplayer-body .aplayer-info .aplayer-music .aplayer-title {
+  font-size: 16px;
+  margin-right: 6px;
+}
+
+.player-container .aplayer .aplayer-body .aplayer-info .aplayer-music .aplayer-author {
+  color: var(--text-color);
+}
+
+/* 歌词 */
+.player-container .aplayer .aplayer-body .aplayer-info .aplayer-lrc {
+  text-align: left;
+  margin: 7px 0 6px 6px;
+  height: 44px;
+  mask: linear-gradient(#efefef 15%, #efefef 85%, hsla(0deg, 0%, 100%, 0.6) 90%, hsla(0deg, 0%, 100%, 0));
+  -webkit-mask: linear-gradient(
+    #efefef 15%,
+    #efefef 85%,
+    hsla(0deg, 0%, 100%, 0.6) 90%,
+    hsla(0deg, 0%, 100%, 0)
+  );
+}
+
+.player-container .aplayer .aplayer-body .aplayer-info .aplayer-lrc::before,
+.player-container .aplayer .aplayer-body .aplayer-info .aplayer-lrc::after {
+  display: none;
+}
+
+.player-container .aplayer .aplayer-body .aplayer-info .aplayer-lrc p {
+  color: var(--text-color);
+  transition: all 0.3s ease-in-out;
+}
+
+.player-container
+  .aplayer
+  .aplayer-body
+  .aplayer-info
+  .aplayer-lrc
+  p.aplayer-lrc-current {
+  font-size: 0.95rem;
+  margin-bottom: 4px !important;
+  opacity: 1;
+  transform: translateY(0);
+}
+
+/* 隐藏控制器（进度条等） */
+.player-container .aplayer .aplayer-body .aplayer-info .aplayer-controller {
+  display: none;
+}
+
+/* 歌曲列表 */
+.player-container .aplayer .aplayer-list {
+  margin-top: 6px;
+  height: var(--list-height);
+  background-color: transparent;
+}
+
+.player-container .aplayer .aplayer-list ol {
+  overflow-y: auto;
+}
+
+.player-container .aplayer .aplayer-list ol::-webkit-scrollbar-track {
+  background-color: transparent;
+}
+
+.player-container .aplayer .aplayer-list ol li {
+  border-color: transparent;
+  transition: all 0.2s ease-in-out;
+}
+
+.player-container .aplayer .aplayer-list ol li.aplayer-list-light {
+  background: var(--bg-opacity-high);
+  border-radius: var(--border-radius);
+}
+
+.player-container .aplayer .aplayer-list ol li:hover {
+  background: var(--bg-opacity-medium) !important;
+  border-radius: var(--border-radius) !important;
+}
+
+.player-container .aplayer .aplayer-list ol li .aplayer-list-index,
+.player-container .aplayer .aplayer-list ol li .aplayer-list-author {
+  color: var(--text-color);
+}
+
+/* 响应式优化 */
+@media (max-width: 768px) {
+  .player-container .aplayer {
+    width: 95%;
+  }
+}

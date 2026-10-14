@@ -1,0 +1,58 @@
+.main-right {
+  width: 50%;
+  margin-left: 0.75rem;
+}
+
+/* 移动端默认隐藏右栏，由汉堡按钮切换（原版该规则仅在小屏生效） */
+@media (max-width: 720px) {
+  .main-right.g-hidden {
+    display: none;
+  }
+}
+
+.main-right .logo {
+  width: 100%;
+  font-family: 'Pacifico-Regular';
+  font-size: 2.25rem;
+  position: fixed;
+  top: 6%;
+  left: 0;
+  text-align: center;
+  transition: transform 0.3s;
+  animation: fade 0.5s;
+  cursor: pointer;
+}
+
+.main-right .logo:active {
+  transform: scale(0.95);
+}
+
+.main-right .logo .sm {
+  font-size: 1.4rem;
+}
+
+@media (min-width: 721px) {
+  .main-right .logo {
+    display: none;
+  }
+}
+
+@media (max-height: 720px) {
+  .main-right .logo {
+    width: calc(100% + 6px);
+    top: 43.26px; /* 721px * 0.06 */
+  }
+}
+
+@media (max-width: 390px) {
+  .main-right .logo {
+    width: 391px;
+  }
+}
+
+@media (max-width: 720px) {
+  .main-right {
+    margin-left: 0;
+    width: 100%;
+  }
+}

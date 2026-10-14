@@ -1,0 +1,48 @@
+.box {
+  flex: 1 0 0%;
+  margin-left: 0.75rem;
+  height: 80%;
+  max-width: 50%;
+  position: relative;
+  animation: fade 0.5s;
+}
+
+.box:hover {
+  transform: scale(1);
+}
+
+.box .close,
+.box .setting {
+  position: absolute;
+  top: 14px;
+  right: 14px;
+  width: 28px;
+  height: 28px;
+  cursor: pointer;
+  z-index: 10;
+  transition:
+    transform 0.3s,
+    opacity 0.3s;
+}
+
+.box .close:hover,
+.box .setting:hover {
+  transform: scale(1.2);
+}
+
+.box .close:active,
+.box .setting:active {
+  transform: scale(1);
+}
+
+.box .setting {
+  right: 56px;
+}
+
+.box .content {
+  display: flex;
+  flex-direction: column;
+  padding: 30px;
+  width: 100%;
+  height: 100%;
+}

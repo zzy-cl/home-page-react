@@ -1,4 +1,5 @@
 import { MusicOne } from '@icon-park/react'
+import { memo } from 'react'
 import { useMainStore } from '@/store'
 import pkg from '../../../package.json'
 import './index.css'
@@ -19,7 +20,7 @@ const siteUrl = (() => {
   return url
 })()
 
-export default function Footer({ className }: { className?: string }) {
+function Footer({ className }: { className?: string }) {
   const playerState = useMainStore((s) => s.playerState)
   const playerLrcShow = useMainStore((s) => s.playerLrcShow)
   const playerLrc = useMainStore((s) => s.playerLrc)
@@ -76,3 +77,5 @@ export default function Footer({ className }: { className?: string }) {
     </footer>
   )
 }
+
+export default memo(Footer)

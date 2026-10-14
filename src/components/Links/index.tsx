@@ -1,4 +1,4 @@
-import { useMemo } from 'react'
+import { useMemo, memo } from 'react'
 import type { ComponentType } from 'react'
 import { FaBlog, FaCloud, FaCompactDisc, FaCompass, FaLink, FaRobot, FaSearch } from 'react-icons/fa'
 import { Swiper, SwiperSlide } from 'swiper/react'
@@ -32,7 +32,7 @@ const paginationConfig: PaginationOptions = {
   bulletElement: 'div',
 }
 
-export default function Links() {
+function Links() {
   const musicClick = useMainStore((s) => s.musicClick)
   const setMusicOpenState = useMainStore((s) => s.setMusicOpenState)
 
@@ -94,3 +94,5 @@ export default function Links() {
     </div>
   )
 }
+
+export default memo(Links)

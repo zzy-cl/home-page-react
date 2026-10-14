@@ -1,10 +1,10 @@
-import { useState } from 'react'
+import { useState, memo } from 'react'
 import { Collapse, Radio, Switch, message } from 'antd'
 import { SuccessPicture } from '@icon-park/react'
 import { useMainStore } from '@/store'
 import './index.css'
 
-export default function Settings() {
+function Settings() {
   const coverType = useMainStore((s) => s.coverType)
   const siteStartShow = useMainStore((s) => s.siteStartShow)
   const musicClick = useMainStore((s) => s.musicClick)
@@ -122,3 +122,5 @@ export default function Settings() {
     </div>
   )
 }
+
+export default memo(Settings)

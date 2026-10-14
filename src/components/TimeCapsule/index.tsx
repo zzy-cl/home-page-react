@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useRef, useState, memo } from 'react'
 import { HourglassFull } from '@icon-park/react'
 import { getTimeProgressData, calculateSiteUptime } from '@/utils/date'
 import type { TimeProgress } from '@/utils/date'
@@ -7,7 +7,7 @@ import './index.css'
 
 type TimeData = Record<'day' | 'week' | 'month' | 'year', TimeProgress>
 
-export default function TimeCapsule() {
+function TimeCapsule() {
   const siteStartShow = useMainStore((s) => s.siteStartShow)
 
   const [timeData, setTimeData] = useState<TimeData>(() => getTimeProgressData())
@@ -29,7 +29,8 @@ export default function TimeCapsule() {
       }
     }
     updateTimeData()
-    timeInterval.current = setInterval(updateTimeData, 1000)
+    // 优化: 时光胶囊进度变化缓慢,每分钟更新一次即可
+    timeInterval.current = setInterval(updateTimeData, 60000)
     return () => {
       if (timeInterval.current) {
         clearInterval(timeInterval.current)
@@ -86,3 +87,5 @@ export default function TimeCapsule() {
     </div>
   )
 }
+
+export default memo(TimeCapsule)

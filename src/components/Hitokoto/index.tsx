@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react'
+import { useMemo, useState, memo } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { MusicMenu } from '@icon-park/react'
 import { getHitokoto } from '@/api'
@@ -7,7 +7,7 @@ import { notice } from '@/utils/notice'
 import { debounce } from '@/utils'
 import './index.css'
 
-export default function Hitokoto() {
+function Hitokoto() {
   const musicOpenState = useMainStore((s) => s.musicOpenState)
   const musicIsOk = useMainStore((s) => s.musicIsOk)
   const setMusicOpenState = useMainStore((s) => s.setMusicOpenState)
@@ -70,3 +70,5 @@ export default function Hitokoto() {
     </div>
   )
 }
+
+export default memo(Hitokoto)

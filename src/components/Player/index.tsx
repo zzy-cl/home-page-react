@@ -1,4 +1,4 @@
-import { forwardRef, useEffect, useImperativeHandle, useRef, useState } from 'react'
+import { forwardRef, useEffect, useImperativeHandle, useRef, useState, memo } from 'react'
 import type { CSSProperties } from 'react'
 import APlayer from 'aplayer'
 import 'aplayer/dist/APlayer.min.css'
@@ -190,4 +190,4 @@ const Player = forwardRef<PlayerHandle, PlayerProps>(function Player(
   )
 })
 
-export default Player
+export default memo(Player)

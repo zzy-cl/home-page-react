@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useRef, useState, memo } from 'react'
 import { useMainStore } from '@/store'
 import { notice } from '@/utils/notice'
 import Spinner from '../Spinner'
@@ -22,7 +22,7 @@ interface BackgroundProps {
   onLoadComplete?: () => void
 }
 
-export default function Background({ onLoadComplete }: BackgroundProps) {
+function Background({ onLoadComplete }: BackgroundProps) {
   const imgLoadStatus = useMainStore((s) => s.imgLoadStatus)
   const coverType = useMainStore((s) => s.coverType)
   const backgroundShow = useMainStore((s) => s.backgroundShow)
@@ -92,3 +92,5 @@ export default function Background({ onLoadComplete }: BackgroundProps) {
     </div>
   )
 }
+
+export default memo(Background)

@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useState, memo } from 'react'
 import { getAdcode, getWeather, getOtherWeather } from '@/api'
 import { notice } from '@/utils/notice'
 import './index.css'
@@ -82,7 +82,7 @@ const fetchWeatherData = async (): Promise<WeatherData> => {
   }
 }
 
-export default function Weather() {
+function Weather() {
   const [weatherData, setWeatherData] = useState<WeatherData | null>(null)
 
   useEffect(() => {
@@ -115,3 +115,5 @@ export default function Weather() {
     </div>
   )
 }
+
+export default memo(Weather)

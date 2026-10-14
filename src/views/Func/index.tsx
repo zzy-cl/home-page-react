@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useRef, useState, memo } from 'react'
 import { getCurrentTime } from '@/utils/date'
 import Hitokoto from '@/components/Hitokoto'
 import Music from '@/components/Music'
@@ -8,7 +8,7 @@ import './index.css'
 
 const playerHasId = import.meta.env.VITE_SONG_ID
 
-export default function Func() {
+function Func() {
   const mobileFuncState = useMainStore((s) => s.mobileFuncState)
 
   // 当前时间
@@ -52,3 +52,5 @@ export default function Func() {
     </div>
   )
 }
+
+export default memo(Func)

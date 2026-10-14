@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useRef, useState, memo } from 'react'
 import {
   GoStart,
   PlayOne,
@@ -21,7 +21,7 @@ const playerData = {
   id: import.meta.env.VITE_SONG_ID,
 }
 
-export default function Music() {
+function Music() {
   const musicOpenState = useMainStore((s) => s.musicOpenState)
   const setMusicOpenState = useMainStore((s) => s.setMusicOpenState)
   const playerState = useMainStore((s) => s.playerState)
@@ -171,3 +171,5 @@ export default function Music() {
     </>
   )
 }
+
+export default memo(Music)

@@ -117,11 +117,15 @@
   background-color: #2a2a2a;
 }
 
+/* 循环模式等行内 Radio.Group 样式 */
 .setting .setting-collapse .item .ant-radio-group {
-  gap: 6px;
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
 }
 
 .setting .setting-collapse .item .ant-radio-wrapper {
   margin: 2px 0;
   padding: 4px 12px;
+  font-size: 13px;
 }

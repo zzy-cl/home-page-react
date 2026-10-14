@@ -206,6 +206,21 @@ a:hover::after {
   }
 }
 
+/* 针对居中弹窗的专用动画 - 同时保持居中定位和动画效果 */
+@keyframes fade-center {
+  from {
+    opacity: 0;
+    /* 同时包含居中定位和动画偏移,避免 transform 覆盖导致闪烁 */
+    transform: translate(-50%, -50%) translateY(10px);
+    filter: blur(4px);
+  }
+  to {
+    opacity: 1;
+    transform: translate(-50%, -50%) translateY(0);
+    filter: blur(0);
+  }
+}
+
 @keyframes fade-blur-in {
   0% {
     filter: blur(30px) brightness(0.2);

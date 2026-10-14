@@ -16,7 +16,8 @@
   padding: 40px;
   overflow: hidden;
   position: relative;
-  animation: fade 0.4s;
+  /* 使用 fade-center 动画,同时保持居中定位和动画效果,避免闪烁 */
+  animation: fade-center 0.4s;
 }
 
 .set::before {

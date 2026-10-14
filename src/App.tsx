@@ -1,4 +1,4 @@
-import { useEffect } from 'react'
+import { useEffect, lazy, Suspense } from 'react'
 import { App as AntApp, ConfigProvider, theme } from 'antd'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { HamburgerButton, CloseSmall } from '@icon-park/react'
@@ -12,9 +12,12 @@ import Background from '@/components/Background'
 import Footer from '@/components/Footer'
 import Left from '@/views/Main/Left'
 import Right from '@/views/Main/Right'
-import Box from '@/views/Box'
-import MoreSettings from '@/views/MoreSettings'
+import Spinner from '@/components/Spinner'
 import './App.css'
+
+// 懒加载重量级组件
+const Box = lazy(() => import('@/views/Box'))
+const MoreSettings = lazy(() => import('@/views/MoreSettings'))
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -141,11 +144,17 @@ function MainPage() {
             <section className="all" style={{ display: setOpenState ? 'none' : 'flex' }}>
               <Left />
               {!boxOpenState && <Right />}
-              {boxOpenState && <Box />}
+              {boxOpenState && (
+                <Suspense fallback={<div className="loading-box"><Spinner size="large" /></div>}>
+                  <Box />
+                </Suspense>
+              )}
             </section>
             {setOpenState && (
               <section className="more" onClick={() => setSetOpenState(false)}>
-                <MoreSettings />
+                <Suspense fallback={<div className="loading-settings"><Spinner size="large" /></div>}>
+                  <MoreSettings />
+                </Suspense>
               </section>
             )}
           </div>

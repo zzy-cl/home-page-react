@@ -67,5 +67,31 @@ export default ({ mode }: { mode: string }) =>
           pure_funcs: ['console.log'],
         },
       },
+      rollupOptions: {
+        output: {
+          manualChunks(id) {
+            // React 核心库单独分包
+            if (id.includes('node_modules/react') || id.includes('node_modules/react-dom')) {
+              return 'vendor-react'
+            }
+            // UI 组件库分包
+            if (id.includes('node_modules/antd') || id.includes('node_modules/@icon-park')) {
+              return 'vendor-ui'
+            }
+            // 音乐播放器分包
+            if (id.includes('node_modules/aplayer')) {
+              return 'vendor-player'
+            }
+            // 数据获取库分包
+            if (id.includes('node_modules/@tanstack/react-query') || id.includes('node_modules/zustand')) {
+              return 'vendor-query'
+            }
+            // 动画库分包
+            if (id.includes('node_modules/motion')) {
+              return 'vendor-motion'
+            }
+          },
+        },
+      },
     },
   })

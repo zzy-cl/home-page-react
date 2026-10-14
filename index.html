@@ -13,6 +13,16 @@
     <meta name="author" content="%VITE_SITE_AUTHOR%" />
     <meta name="theme-color" content="#424242" />
     <title>%VITE_SITE_NAME%</title>
+
+    <!-- 预加载关键字体资源,提升首屏渲染速度 -->
+    <!-- as="font" 告诉浏览器这是字体资源,crossorigin 是字体加载必需的 -->
+    <link
+      rel="preload"
+      href="/src/style/font/ZCOOL Addict Italic 01.ttf"
+      as="font"
+      type="font/ttf"
+      crossorigin="anonymous"
+    />
   </head>
 
   <body>

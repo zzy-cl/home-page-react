@@ -20,16 +20,44 @@ export default ({ mode }: { mode: string }) =>
           clientsClaim: true,
           runtimeCaching: [
             {
-              // js / css / 字体静态资源缓存
+              // JS / CSS / 字体静态资源缓存
+              // CacheFirst: 优先使用缓存,适合不常变更的静态资源
               urlPattern: /(.*?)\.(js|css|woff2|woff|ttf)/,
               handler: 'CacheFirst',
-              options: { cacheName: 'js-css-cache' },
+              options: {
+                cacheName: 'js-css-cache',
+                expiration: {
+                  maxEntries: 50, // 最多缓存 50 个文件
+                  maxAgeSeconds: 30 * 24 * 60 * 60, // 30 天过期
+                },
+              },
             },
             {
-              // 图片缓存
-              urlPattern: /(.*?)\.(png|jpe?g|svg|gif|bmp|psd|tiff|tga|eps)/,
+              // 图片资源缓存
+              // CacheFirst: 图片通常不变,优先使用缓存减少网络请求
+              urlPattern: /(.*?)\.(png|jpe?g|svg|gif|bmp|webp|ico)/,
               handler: 'CacheFirst',
-              options: { cacheName: 'image-cache' },
+              options: {
+                cacheName: 'image-cache',
+                expiration: {
+                  maxEntries: 100, // 最多缓存 100 张图片
+                  maxAgeSeconds: 60 * 24 * 60 * 60, // 60 天过期
+                },
+              },
+            },
+            {
+              // API 请求缓存
+              // NetworkFirst: 优先使用网络,失败后降级到缓存,适合需要新鲜数据的 API
+              urlPattern: /^https:\/\/api\./,
+              handler: 'NetworkFirst',
+              options: {
+                cacheName: 'api-cache',
+                networkTimeoutSeconds: 5, // 网络超时 5 秒后使用缓存
+                expiration: {
+                  maxEntries: 50,
+                  maxAgeSeconds: 5 * 60, // API 缓存 5 分钟
+                },
+              },
             },
           ],
         },

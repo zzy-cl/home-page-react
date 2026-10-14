@@ -32,10 +32,15 @@ class Cursor {
   pos: { curr: CursorPos | null; prev: CursorPos | null } = { curr: null, prev: null }
   cursor!: HTMLDivElement
   scr!: HTMLStyleElement
+  // 跟踪当前的缩放状态,用于在移动时保持缩放效果
+  currentScale: number = 1
 
+  // 使用 CSS Transform 替代 left/top,避免触发 Layout 重排
+  // Transform 只触发 Composite 层,性能更好,减少控制台卡顿
+  // 使用 translate3d 开启硬件加速
   move(left: number, top: number) {
-    this.cursor.style['left'] = `${left}px`
-    this.cursor.style['top'] = `${top}px`
+    // translate3d 比 translate 性能更好,会强制启用 GPU 加速
+    this.cursor.style.transform = `translate3d(${left}px, ${top}px, 0) scale(${this.currentScale})`
   }
 
   create() {
@@ -73,10 +78,30 @@ class Cursor {
       this.cursor.classList.remove('g-hidden')
       this.render()
     }
-    document.onmouseenter = () => this.cursor.classList.remove('g-hidden')
-    document.onmouseleave = () => this.cursor.classList.add('g-hidden')
-    document.onmousedown = () => this.cursor.classList.add('active')
-    document.onmouseup = () => this.cursor.classList.remove('active')
+    document.onmouseenter = () => {
+      this.cursor.classList.remove('g-hidden')
+      this.currentScale = 1
+      // 更新 transform 以应用新的 scale
+      if (this.pos.prev) this.move(this.pos.prev.x, this.pos.prev.y)
+    }
+    document.onmouseleave = () => {
+      this.cursor.classList.add('g-hidden')
+      this.currentScale = 0.5
+      // 更新 transform 以应用新的 scale
+      if (this.pos.prev) this.move(this.pos.prev.x, this.pos.prev.y)
+    }
+    document.onmousedown = () => {
+      this.cursor.classList.add('active')
+      this.currentScale = 1.5
+      // 更新 transform 以应用新的 scale
+      if (this.pos.prev) this.move(this.pos.prev.x, this.pos.prev.y)
+    }
+    document.onmouseup = () => {
+      this.cursor.classList.remove('active')
+      this.currentScale = 1
+      // 更新 transform 以应用新的 scale
+      if (this.pos.prev) this.move(this.pos.prev.x, this.pos.prev.y)
+    }
   }
 
   render() {

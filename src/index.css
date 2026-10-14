@@ -8,24 +8,24 @@
 
 
 /* ---------- 字体 ---------- */
-/* 与原站实际生效字体保持一致：Pacifico-Regular 家族实际加载 ZCOOL Addict Italic， */
-/* UnidreamLED / HarmonyOS_Regular 实际加载 SmileySans-Oblique */
+/* 装饰性英文字体保留，中文字体使用系统字体栈 */
 @font-face {
   font-family: 'Pacifico-Regular';
   font-display: swap;
   src: url('./style/font/ZCOOL Addict Italic 01.ttf') format('truetype');
 }
 
+/* UnidreamLED / HarmonyOS_Regular 使用优化的系统字体栈 */
 @font-face {
   font-family: 'UnidreamLED';
   font-display: swap;
-  src: url('./style/font/SmileySans-Oblique.woff2') format('woff2');
+  src: local('HarmonyOS Sans SC'), local('PingFang SC'), local('Microsoft YaHei');
 }
 
 @font-face {
   font-family: 'HarmonyOS_Regular';
   font-display: swap;
-  src: url('./style/font/SmileySans-Oblique.woff2') format('woff2');
+  src: local('HarmonyOS Sans SC'), local('PingFang SC'), local('Microsoft YaHei');
 }
 
 /* ---------- 全局基础样式 ---------- */

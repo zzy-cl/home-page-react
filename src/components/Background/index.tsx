@@ -11,7 +11,7 @@ const LOAD_DELAY_MAX = 200 // 最大加载延迟
 
 // 壁纸源映射
 const wallpaperSources: Record<string, () => string> = {
-  '0': () => `/images/background${Math.floor(Math.random() * IMAGE_COUNT) + 1}.jpg`,
+  '0': () => `/images/background${Math.floor(Math.random() * IMAGE_COUNT) + 1}.webp`,
   '1': () => 'https://api.dujin.org/bing/1920.php',
   '2': () => 'https://api.vvhan.com/api/wallpaper/views',
   '3': () => 'https://api.vvhan.com/api/wallpaper/acg',

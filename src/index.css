@@ -276,61 +276,6 @@ a:hover::after {
   }
 }
 
-/* ---------- 自定义鼠标 ---------- */
-#cursor {
-  position: fixed;
-  /* 移除 left/top,改用 JS 控制的 transform: translate3d() */
-  width: 20px;
-  height: 20px;
-  background: radial-gradient(
-    circle,
-    rgba(255, 255, 255, 0.8) 0%,
-    rgba(255, 255, 255, 0.3) 50%,
-    transparent 100%
-  );
-  border-radius: 50%;
-  opacity: 0.5;
-  z-index: 10086;
-  pointer-events: none;
-  /* transition 只作用于 opacity 和 box-shadow,避免影响位置更新的流畅度 */
-  transition:
-    opacity 0.15s cubic-bezier(0.25, 0.46, 0.45, 0.94),
-    box-shadow 0.15s cubic-bezier(0.25, 0.46, 0.45, 0.94);
-  box-shadow: 0 0 20px rgba(255, 255, 255, 0.3);
-  /* 强制开启 GPU 加速,创建独立合成层 */
-  will-change: transform;
-}
-
-#cursor.g-hidden {
-  opacity: 0;
-  /* scale 通过 JS 的 transform 属性统一控制,这里移除以避免冲突 */
-}
-
-#cursor.active {
-  opacity: 0.8;
-  /* scale 通过 JS 的 transform 属性统一控制,这里移除以避免冲突 */
-  background: radial-gradient(
-    circle,
-    rgba(255, 255, 255, 0.9) 0%,
-    rgba(255, 255, 255, 0.4) 50%,
-    transparent 100%
-  );
-  box-shadow: 0 0 30px rgba(255, 255, 255, 0.5);
-}
-
-/* 移动端禁用自定义光标 */
-@media (pointer: coarse) {
-  #cursor {
-    display: none !important;
-  }
-}
-
-@media (max-width: 720px) {
-  #cursor {
-    display: none !important;
-  }
-}
-
 /* ---------- 滚动条样式 ---------- */
 ::-webkit-scrollbar,
 scrollbar {

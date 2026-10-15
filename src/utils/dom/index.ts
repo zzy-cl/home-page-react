@@ -1,4 +1,2 @@
 // DOM操作相关工具函数统一导出
-import cursorInit from './cursor'
-
-export { cursorInit }
+// 光标跟随功能已移除以优化性能

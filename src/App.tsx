@@ -3,7 +3,6 @@ import { App as AntApp, ConfigProvider, theme } from 'antd'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { HamburgerButton, CloseSmall } from '@icon-park/react'
 import { showGreetingMessage, checkSpecialDates } from '@/utils/date'
-import { cursorInit } from '@/utils/dom'
 import { notice, setNoticeInstance } from '@/utils/notice'
 import { useMainStore } from '@/store'
 import pkg from '../package.json'
@@ -86,9 +85,6 @@ function MainPage() {
   }, [innerWidth])
 
   useEffect(() => {
-    // 自定义鼠标
-    cursorInit()
-
     // 屏蔽右键
     document.oncontextmenu = () => {
       notice()?.open({

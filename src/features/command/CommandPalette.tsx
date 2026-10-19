@@ -3,21 +3,9 @@ import { useNavigate } from '@tanstack/react-router'
 import type { UseNavigateResult } from '@tanstack/react-router'
 import { site } from '@/content/site'
 import { fetchHitokoto } from '@/features/hitokoto/api'
+import { applyAccent, ACCENTS } from '@/lib/accent'
 import { filterCommands, type Command } from './registry'
 import { useUiStore } from '@/store/ui'
-
-/** accent 轮换顺序(spec §5.1) */
-const ACCENTS = ['#7aa2ff', '#ff9e64', '#b47aff']
-const ACCENT_KEY = 'accent'
-
-/** 读回持久化的 accent;无则用默认值 */
-function loadAccent(): string {
-  try {
-    return localStorage.getItem(ACCENT_KEY) ?? ACCENTS[0]
-  } catch {
-    return ACCENTS[0]
-  }
-}
 
 function buildCommands(navigate: UseNavigateResult<string>, toast: (msg: string) => void): Command[] {
   const cmds: Command[] = [
@@ -57,7 +45,7 @@ function buildCommands(navigate: UseNavigateResult<string>, toast: (msg: string)
       action: () => useUiStore.getState().openTerminal(),
     },
   ]
-  // email 可选:.env 未配置则不出现该命令
+  // email 可选:site.email 未配置则不出现该命令
   if (site.email) {
     cmds.push({
       id: 'open-email',
@@ -74,14 +62,9 @@ function buildCommands(navigate: UseNavigateResult<string>, toast: (msg: string)
     section: '主题',
     action: () => {
       const current = getComputedStyle(document.documentElement).getPropertyValue('--accent').trim()
-      const idx = ACCENTS.indexOf(current)
+      const idx = ACCENTS.indexOf(current as (typeof ACCENTS)[number])
       const next = ACCENTS[(idx + 1) % ACCENTS.length]
-      document.documentElement.style.setProperty('--accent', next)
-      try {
-        localStorage.setItem(ACCENT_KEY, next)
-      } catch {
-        // localStorage 不可用(隐私模式)则不持久化,主题仅本次会话生效
-      }
+      applyAccent(next)
       toast(`强调色已切换为 ${next}`)
     },
   })
@@ -108,7 +91,8 @@ export default function CommandPalette() {
   const [active, setActive] = useState(0)
   const [toastMsg, setToastMsg] = useState<string | null>(null)
 
-  // 面板内轻提示(fortune/主题结果展示,不引入 toast 依赖)
+  // 轻提示:渲染在 dialog 之外的固定浮层——fortune 为异步结果、
+  // theme 在执行后面板即关闭,toast 必须独立于 dialog 存活才能被看到
   const toast = useCallback((msg: string) => {
     setToastMsg(msg)
     if (toastTimer.current) clearTimeout(toastTimer.current)
@@ -141,6 +125,11 @@ export default function CommandPalette() {
     return () => dlg.removeEventListener('close', onClose)
   }, [setCommandOpen])
 
+  // 卸载时清掉未熄灭的 toast 定时器
+  useEffect(() => () => {
+    if (toastTimer.current) clearTimeout(toastTimer.current)
+  }, [])
+
   const execute = useCallback(
     (cmd: Command | undefined) => {
       if (!cmd) return
@@ -166,7 +155,10 @@ export default function CommandPalette() {
   // 按 section 分组展示
   const sections = useMemo(() => {
     const map = new Map<string, Command[]>()
-    for (const cmd of filtered) {
+    let idx = 0
+    // 依赖 filtered 的顺序,顺便记录全局索引供高亮比对(避免 O(n²) indexOf)
+    const indexed = filtered.map((cmd) => ({ cmd, idx: idx++ }))
+    for (const { cmd } of indexed) {
       const list = map.get(cmd.section) ?? []
       list.push(cmd)
       map.set(cmd.section, list)
@@ -175,107 +167,89 @@ export default function CommandPalette() {
   }, [filtered])
 
   return (
-    <dialog
-      ref={dialogRef}
-      className="glass-card m-auto w-[min(560px,92vw)] p-0 text-left backdrop:bg-black/60"
-      style={{ color: 'var(--text-0)' }}
-      onClick={(e) => {
-        // 点击遮罩(事件目标是 dialog 自身)时关闭
-        if (e.target === dialogRef.current) setCommandOpen(false)
-      }}
-    >
-      <div
-        className="flex items-center gap-2 border-b px-4 py-3"
-        style={{ borderColor: 'var(--glass-border)' }}
+    <>
+      <dialog
+        ref={dialogRef}
+        className="glass-card m-auto w-[min(560px,92vw)] p-0 text-left backdrop:bg-black/60"
+        style={{ color: 'var(--text-0)' }}
+        onClick={(e) => {
+          // 点击遮罩(事件目标是 dialog 自身)时关闭
+          if (e.target === dialogRef.current) setCommandOpen(false)
+        }}
       >
-        <span className="mono text-xs" style={{ color: 'var(--text-2)' }}>
-          &gt;
-        </span>
-        <input
-          ref={inputRef}
-          value={query}
-          onChange={(e) => {
-            setQuery(e.target.value)
-            setActive(0)
-          }}
-          onKeyDown={onKeyDown}
-          placeholder="输入命令或搜索…"
-          className="mono w-full bg-transparent text-sm outline-none"
-          style={{ color: 'var(--text-0)' }}
-        />
-        <kbd className="mono text-xs" style={{ color: 'var(--text-2)' }}>
-          Esc
-        </kbd>
-      </div>
+        <div
+          className="flex items-center gap-2 border-b px-4 py-3"
+          style={{ borderColor: 'var(--glass-border)' }}
+        >
+          <span className="mono text-xs" style={{ color: 'var(--text-2)' }}>
+            &gt;
+          </span>
+          <input
+            ref={inputRef}
+            value={query}
+            onChange={(e) => {
+              setQuery(e.target.value)
+              setActive(0)
+            }}
+            onKeyDown={onKeyDown}
+            placeholder="输入命令或搜索…"
+            className="mono w-full bg-transparent text-sm outline-none"
+            style={{ color: 'var(--text-0)' }}
+          />
+          <kbd className="mono text-xs" style={{ color: 'var(--text-2)' }}>
+            Esc
+          </kbd>
+        </div>
 
-      <div className="max-h-[50vh] overflow-y-auto p-2">
-        {filtered.length === 0 ? (
-          <div className="px-3 py-6 text-center text-sm" style={{ color: 'var(--text-2)' }}>
-            无匹配命令
-          </div>
-        ) : (
-          sections.map(([section, list]) => (
-            <div key={section} className="mb-1">
-              <div
-                className="mono px-3 py-1.5 text-[10px] tracking-widest"
-                style={{ color: 'var(--text-2)' }}
-              >
-                {section}
-              </div>
-              {list.map((cmd) => {
-                const idx = filtered.indexOf(cmd)
-                const isActive = idx === active
-                return (
-                  <button
-                    key={cmd.id}
-                    type="button"
-                    className="flex w-full items-center rounded-[var(--radius-inner)] px-3 py-2 text-left text-sm"
-                    style={{
-                      background: isActive ? 'var(--glass-bg)' : 'transparent',
-                      color: isActive ? 'var(--text-0)' : 'var(--text-1)',
-                    }}
-                    onMouseEnter={() => setActive(idx)}
-                    onClick={() => execute(cmd)}
-                  >
-                    {cmd.title}
-                  </button>
-                )
-              })}
+        <div className="max-h-[50vh] overflow-y-auto p-2">
+          {filtered.length === 0 ? (
+            <div className="px-3 py-6 text-center text-sm" style={{ color: 'var(--text-2)' }}>
+              无匹配命令
             </div>
-          ))
-        )}
-      </div>
+          ) : (
+            sections.map(([section, list]) => (
+              <div key={section} className="mb-1">
+                <div
+                  className="mono px-3 py-1.5 text-[10px] tracking-widest"
+                  style={{ color: 'var(--text-2)' }}
+                >
+                  {section}
+                </div>
+                {list.map((cmd) => {
+                  const idx = filtered.indexOf(cmd)
+                  const isActive = idx === active
+                  return (
+                    <button
+                      key={cmd.id}
+                      type="button"
+                      className="flex w-full items-center rounded-[var(--radius-inner)] px-3 py-2 text-left text-sm"
+                      style={{
+                        background: isActive ? 'var(--glass-bg)' : 'transparent',
+                        color: isActive ? 'var(--text-0)' : 'var(--text-1)',
+                      }}
+                      onMouseEnter={() => setActive(idx)}
+                      onClick={() => execute(cmd)}
+                    >
+                      {cmd.title}
+                    </button>
+                  )
+                })}
+              </div>
+            ))
+          )}
+        </div>
+      </dialog>
 
+      {/* toast 独立于 dialog:面板关闭后反馈仍然可见 */}
       {toastMsg && (
         <div
-          className="mono border-t px-4 py-2 text-xs"
-          style={{ borderColor: 'var(--glass-border)', color: 'var(--accent)' }}
+          className="glass-card mono fixed bottom-16 left-1/2 z-[60] -translate-x-1/2 px-4 py-2 text-xs"
+          style={{ color: 'var(--accent)', maxWidth: '90vw' }}
+          role="status"
         >
           {toastMsg}
         </div>
       )}
-    </dialog>
+    </>
   )
-}
-
-/** 全局快捷键接线(App 层调用一次):Ctrl/Cmd+K 开关面板;终端已开时不抢占 */
-export function useCommandHotkey() {
-  const setCommandOpen = useUiStore((s) => s.setCommandOpen)
-  useEffect(() => {
-    const onKey = (e: KeyboardEvent) => {
-      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'k') {
-        e.preventDefault()
-        const { commandOpen, terminalOpen } = useUiStore.getState()
-        if (terminalOpen) return
-        setCommandOpen(!commandOpen)
-      }
-    }
-    window.addEventListener('keydown', onKey)
-    return () => window.removeEventListener('keydown', onKey)
-  }, [setCommandOpen])
-}
-
-// 应用启动时恢复持久化的 accent(无副作用模块初始化)
-if (typeof document !== 'undefined') {
-  document.documentElement.style.setProperty('--accent', loadAccent())
 }

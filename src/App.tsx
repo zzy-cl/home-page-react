@@ -1,9 +1,8 @@
-import { lazy, Suspense, useEffect } from 'react'
+import { lazy, Suspense } from 'react'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { RouterProvider } from '@tanstack/react-router'
 import { router } from '@/app/router'
-import { useCommandHotkey } from '@/features/command/CommandPalette'
-import { shouldOpenTerminal } from '@/features/terminal/commands'
+import { useGlobalHotkeys } from '@/app/hotkeys'
 import { useUiStore } from '@/store/ui'
 
 const queryClient = new QueryClient({
@@ -16,36 +15,30 @@ const queryClient = new QueryClient({
   },
 })
 
-// 彩蛋层动态加载(spec §6.4):首次触发才拉取 chunk,不占首屏预算
+// 彩蛋层动态加载(spec §6.4):按需条件挂载——首次触发才拉取 chunk,不占首屏预算。
+// 注意:本文件不得静态 import 彩蛋组件(热键逻辑在 app/hotkeys.ts,与 UI 分离)。
+// 两个独立 Suspense 边界,避免一个挂起卸掉另一个。
 const CommandPalette = lazy(() => import('@/features/command/CommandPalette'))
 const Terminal = lazy(() => import('@/features/terminal/Terminal'))
 
-/** 全局 `~` 键:打开终端(input 聚焦/面板已开时不触发) */
-function useTerminalHotkey() {
-  const setTerminalOpen = useUiStore((s) => s.setTerminalOpen)
-  useEffect(() => {
-    const onKey = (e: KeyboardEvent) => {
-      const { commandOpen, terminalOpen } = useUiStore.getState()
-      if (shouldOpenTerminal(e, commandOpen || terminalOpen)) {
-        e.preventDefault()
-        setTerminalOpen(true)
-      }
-    }
-    window.addEventListener('keydown', onKey)
-    return () => window.removeEventListener('keydown', onKey)
-  }, [setTerminalOpen])
-}
-
 function Shell() {
-  useCommandHotkey()
-  useTerminalHotkey()
+  useGlobalHotkeys()
+  const commandOpen = useUiStore((s) => s.commandOpen)
+  const terminalOpen = useUiStore((s) => s.terminalOpen)
+
   return (
     <>
       <RouterProvider router={router} />
-      <Suspense fallback={null}>
-        <CommandPalette />
-        <Terminal />
-      </Suspense>
+      {commandOpen && (
+        <Suspense fallback={null}>
+          <CommandPalette />
+        </Suspense>
+      )}
+      {terminalOpen && (
+        <Suspense fallback={null}>
+          <Terminal />
+        </Suspense>
+      )}
     </>
   )
 }

@@ -9,6 +9,7 @@ import Heatmap from '@/features/github/Heatmap'
 import { useContributions, useRepoStars } from '@/features/github/hooks'
 import HitokotoCard from '@/features/hitokoto/HitokotoCard'
 import { loadNowEntries } from '@/lib/md'
+import { useUiStore } from '@/store/ui'
 
 /*
  * 首屏布局(spec §4.1 的 12 列实现):
@@ -60,11 +61,17 @@ function Home() {
               ))}
             </div>
           </div>
-          <div className="mt-6 flex items-center gap-2" style={{ color: 'var(--text-2)' }}>
+          {/* 点击呼出面板:移动端无键盘,这是面板与终端的唯一入口(Review Focus 5) */}
+          <button
+            type="button"
+            className="mt-6 flex cursor-pointer items-center gap-2 transition-colors"
+            style={{ color: 'var(--text-2)' }}
+            onClick={() => useUiStore.getState().setCommandOpen(true)}
+          >
             <Kbd>Ctrl</Kbd>
             <Kbd>K</Kbd>
             <span className="mono text-[11px]">全站指令</span>
-          </div>
+          </button>
         </BentoCard>
 
         {/* GitHub 热力图: col-span-8 row-span-2 */}

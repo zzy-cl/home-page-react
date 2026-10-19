@@ -27,9 +27,9 @@ export default function Heatmap({ data }: { data: ContributionYear | null }) {
         </span>
       </div>
 
-      {/* 53×7 固定尺寸格子,横向居中;异常窄卡时兜底隐藏滚动条 */}
+      {/* 53 列固定 11px 格子,横向居中;md 窄卡时允许滚动兜底(滚动条隐藏) */}
       <div
-        className="flex justify-center overflow-x py-2"
+        className="flex justify-center overflow-x-auto py-2"
         style={{ scrollbarWidth: 'none' }}
       >
         <div

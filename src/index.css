@@ -1,1 +1,97 @@
 @import 'tailwindcss';
+/* JetBrains Mono:等宽字体是本站的身份符号(自托管 latin 子集,约 50KB) */
+@import '@fontsource/jetbrains-mono/latin-400.css';
+@import '@fontsource/jetbrains-mono/latin-700.css';
+
+/*
+ * 呓语工位 — Glass 2.0 设计系统
+ * 玻璃只做材质,不做视觉主角;信息与留白优先。
+ * 动画红线:仅 transform/opacity,禁止动画 width/left/top/box-shadow。
+ */
+:root {
+  /* 底色:深空灰阶,非纯黑 */
+  --bg-0: #0d0f12;          /* 页面底 */
+  --bg-1: #16181d;          /* 卡片基底 */
+
+  /* 玻璃材质 */
+  --glass-bg: rgba(255, 255, 255, 0.06);
+  --glass-border: rgba(255, 255, 255, 0.1);
+  --glass-blur: 20px;
+  --glass-highlight: inset 0 1px 0 rgba(255, 255, 255, 0.12);
+
+  /* 强调色:一处高饱和,全站唯一(Cmd+K 主题命令轮换 #7aa2ff → #ff9e64 → #b47aff) */
+  --accent: #7aa2ff;
+  --accent-glow: rgba(122, 162, 255, 0.35);
+
+  /* 文字 */
+  --text-0: #e8eaed;
+  --text-1: #9aa0a6;
+  --text-2: #5f6368;
+
+  /* 字体 */
+  --font-sans: 'HarmonyOS Sans SC', 'PingFang SC', 'Microsoft YaHei', sans-serif;
+  --font-mono: 'JetBrains Mono', 'Cascadia Code', Consolas, monospace;
+
+  /* 几何 */
+  --radius-card: 16px;
+  --radius-inner: 10px;
+  --gap-grid: 12px;
+}
+
+/* Tailwind 4 桥接:使 font-mono / accent 相关工具类跟随令牌 */
+@theme inline {
+  --font-mono: var(--font-mono);
+  --color-accent: var(--accent);
+}
+
+/* ---------- 基础样式 ---------- */
+html,
+body {
+  width: 100%;
+  height: 100%;
+  margin: 0;
+  padding: 0;
+  background-color: var(--bg-0);
+  color: var(--text-0);
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+*,
+a,
+p {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+  color: inherit;
+  text-decoration: none;
+}
+
+a {
+  transition: color 0.2s ease;
+}
+
+a:hover {
+  color: var(--accent);
+}
+
+::selection {
+  background: var(--accent-glow);
+  color: var(--text-0);
+}
+
+/* ---------- 玻璃卡片原语 ---------- */
+.glass-card {
+  background: var(--glass-bg);
+  border: 1px solid var(--glass-border);
+  border-radius: var(--radius-card);
+  backdrop-filter: blur(var(--glass-blur));
+  -webkit-backdrop-filter: blur(var(--glass-blur));
+  box-shadow: var(--glass-highlight);
+}
+
+/* 等宽字体工具类 */
+.mono {
+  font-family: var(--font-mono);
+}

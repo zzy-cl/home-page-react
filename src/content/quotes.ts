@@ -10,5 +10,5 @@ export const quotes: Quote[] = [
   { text: '简单是可靠的先决条件。', from: 'Edsger W. Dijkstra' },
   { text: '过早的优化是万恶之源。', from: 'Donald Knuth' },
   { text: '代码是写给人看的,只是恰好能在机器上运行。', from: '《计算机程序的构造和解释》' },
-  { text: '保持热爱,保持构建。', from: '呓语工位' },
+  { text: '保持热爱,保持构建。', from: '呓语小屋' },
 ];

@@ -9,8 +9,8 @@ export interface ProjectInfo {
 export const projects: ProjectInfo[] = [
   {
     repo: 'zzy-cl/home-page-react',
-    name: '呓语工位',
-    desc: '本站——从起始页彻底重设计的开发者工位',
+    name: '呓语小屋',
+    desc: '本站——从起始页彻底重设计的个人主页',
   },
   { repo: null, name: '占位项目 A', desc: '站长替换为自己的项目' },
   { repo: null, name: '占位项目 B', desc: '站长替换为自己的项目' },

@@ -58,6 +58,15 @@ function pad(s: string, n: number): string {
   return out;
 }
 
+/**
+ * 构建时间戳显示格式:ISO(UTC)→ `YYYY-MM-DD HH:mm:ss`。
+ * 纯字符串截取、不做时区换算——展示值与构建机器的 toISOString() 一致。
+ */
+export function formatBuildTime(iso: string): string {
+  const m = /^(\d{4}-\d{2}-\d{2})T(\d{2}:\d{2}:\d{2})/.exec(iso);
+  return m ? `${m[1]} ${m[2]}` : iso;
+}
+
 /** skills 两列 ASCII 表(设计稿规格) */
 function skillsAscii(keywords: string[]): string {
   const rows: Array<[string, string]> = [];
@@ -107,10 +116,10 @@ export function executeCommand(input: string, ctx: TerminalContext): TerminalLin
         print(`${ctx.siteName}@${ctx.host}`),
         print('─────────────────────────'),
         print(`OS:      ${ctx.siteName} (Glass 2.0)`),
-        print(`Host:    前端开发者的数字工位`),
+        print(`Host:    前端开发者的数字小屋`),
         print(`Uptime:  ${daysSince(ctx.siteStart)} 天`),
         print('Shell:   monologue-sh 1.0'),
-        print(`Build:   ${ctx.buildTime}`),
+        print(`Build:   ${formatBuildTime(ctx.buildTime)}`),
         print(`Accent:  ${ctx.accentLabel} ${ctx.accentHex}`),
       ];
 

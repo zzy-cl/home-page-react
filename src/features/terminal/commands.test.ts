@@ -1,9 +1,14 @@
 import { describe, expect, it } from 'vitest';
-import { executeCommand, shouldOpenTerminal, type TerminalContext } from './commands';
+import {
+  executeCommand,
+  formatBuildTime,
+  shouldOpenTerminal,
+  type TerminalContext,
+} from './commands';
 
 const ctx: TerminalContext = {
   user: 'zzy-cl',
-  siteName: '呓语工位',
+  siteName: '呓语小屋',
   host: 'zhaozeyu.top',
   keywords: ['Vue3', 'React', 'Rust', 'TypeScript', 'AI', 'Vibe Coding'],
   buildTime: '2026-10-19T09:48:00.000Z',
@@ -45,10 +50,10 @@ describe('executeCommand(设计稿命令集:help/whoami/skills/neofetch/clear/su
     const text = executeCommand('neofetch', ctx)
       .map((l) => l.text)
       .join('\n');
-    expect(text).toContain('呓语工位@zhaozeyu.top');
+    expect(text).toContain('呓语小屋@zhaozeyu.top');
     expect(text).toContain('Uptime:');
     expect(text).toContain('Shell:   monologue-sh 1.0');
-    expect(text).toContain('Build:');
+    expect(text).toContain('Build:   2026-10-19 09:48:00');
     expect(text).toContain('静谧蓝 #7aa2ff');
   });
 
@@ -113,5 +118,16 @@ describe('shouldOpenTerminal', () => {
 
   it('target 为 null 不打开(防御)', () => {
     expect(shouldOpenTerminal(kev(null), false)).toBe(false);
+  });
+});
+
+describe('formatBuildTime', () => {
+  it('ISO 时间戳转为 YYYY-MM-DD HH:mm:ss(纯截取,不做时区换算)', () => {
+    expect(formatBuildTime('2026-10-19T09:48:00.000Z')).toBe('2026-10-19 09:48:00');
+  });
+
+  it('非 ISO 输入原样返回(兜底)', () => {
+    expect(formatBuildTime('dev')).toBe('dev');
+    expect(formatBuildTime('')).toBe('');
   });
 });

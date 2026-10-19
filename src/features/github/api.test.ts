@@ -1,5 +1,12 @@
 import { describe, expect, it } from 'vitest';
-import { parseContributions, toHeatmapLevels } from './api';
+import {
+  deriveStats,
+  parseContributions,
+  parseStarsDirect,
+  parseStarsShields,
+  parseStarsUngh,
+  toHeatmapLevels,
+} from './api';
 
 const valid = {
   total: { '2026': 12 },
@@ -73,5 +80,78 @@ describe('toHeatmapLevels(设计稿渲染数据:counts + levels 数组,future=-1
       { date: '2026-01-02', count: 5, level: 2 as const },
     ];
     expect(toHeatmapLevels(days, 2)).toEqual([0, 2]);
+  });
+});
+
+describe('deriveStats(热力图衍生统计)', () => {
+  const d = (date: string, count: number) => ({ date, count, level: 0 as const });
+
+  it('连击/单日最高/活跃天数按窗口计算,截止日有贡献时最近提交为"今天"', () => {
+    const s = deriveStats([
+      d('', 0), // 首列对齐占位,不参与统计
+      d('2026-10-15', 1),
+      d('2026-10-16', 0),
+      d('2026-10-17', 3),
+      d('2026-10-18', 3),
+      d('2026-10-19', 2),
+    ]);
+    expect(s.streak).toBe(3); // 17-19 连续,中间的 16 号空档不连
+    expect(s.best).toBe(3);
+    expect(s.activeDays).toBe(4); // 15/17/18/19 共 4 天
+    expect(s.totalDays).toBe(5); // 占位格不计
+    expect(s.lastActiveLabel).toBe('今天');
+  });
+
+  it('截止日没提交时,连击以最近一次有贡献收尾,文案相对截止日', () => {
+    const s = deriveStats([d('2026-10-17', 2), d('2026-10-18', 0), d('2026-10-19', 0)]);
+    expect(s.streak).toBe(1);
+    expect(s.best).toBe(2);
+    expect(s.activeDays).toBe(1);
+    expect(s.lastActiveLabel).toBe('2 天前');
+  });
+
+  it('昨天有提交时文案为"昨天"', () => {
+    const s = deriveStats([d('2026-10-18', 1), d('2026-10-19', 0)]);
+    expect(s.lastActiveLabel).toBe('昨天');
+  });
+
+  it('窗口内无任何贡献 → 全零 + 占位文案', () => {
+    const s = deriveStats([d('2026-10-18', 0), d('2026-10-19', 0)]);
+    expect(s).toEqual({
+      streak: 0,
+      best: 0,
+      activeDays: 0,
+      totalDays: 2,
+      lastActiveLabel: '—',
+    });
+  });
+
+  it('空数组降级', () => {
+    expect(deriveStats([]).lastActiveLabel).toBe('—');
+    expect(deriveStats([]).totalDays).toBe(0);
+  });
+});
+
+describe('star 兜底链解析器(官方 / shields.io / ungh.cc)', () => {
+  it('parseStarsDirect:取 stargazers_count 数值', () => {
+    expect(parseStarsDirect({ stargazers_count: 5 })).toBe(5);
+    expect(parseStarsDirect({ stargazers_count: 'x' })).toBeNull();
+    expect(parseStarsDirect({})).toBeNull();
+    expect(parseStarsDirect(null)).toBeNull();
+  });
+
+  it('parseStarsShields:只接受纯数字字符串(value ≥1k 会被缩写,视为失败走下一级)', () => {
+    expect(parseStarsShields({ value: '0' })).toBe(0);
+    expect(parseStarsShields({ value: '42' })).toBe(42);
+    expect(parseStarsShields({ value: '1.2k' })).toBeNull();
+    expect(parseStarsShields({ value: 12 })).toBeNull(); // 非字符串
+    expect(parseStarsShields({})).toBeNull();
+  });
+
+  it('parseStarsUngh:取 repo.stars 数值', () => {
+    expect(parseStarsUngh({ repo: { stars: 7 } })).toBe(7);
+    expect(parseStarsUngh({ repo: {} })).toBeNull();
+    expect(parseStarsUngh({})).toBeNull();
+    expect(parseStarsUngh(null)).toBeNull();
   });
 });

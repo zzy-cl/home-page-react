@@ -5,7 +5,7 @@
 @import '@fontsource/jetbrains-mono/latin-700.css';
 
 /* ═══════════════════════════════════════════════════════════════════
-   呓语工位 Monologue Deck · Glass 2.0
+   呓语小屋 Monologue Deck · Glass 2.0
    视觉层移植自 OpenDesign 设计稿(assets/css/style.css)——
    od-* 布局原语不搬(由组件结构承担),全部视觉规则 1:1 保留。
    --text-2 按 Brief 优化点调亮至 ≥4.5:1(#7d848e)
@@ -131,8 +131,15 @@ blockquote {
 .mono {
   font-family: var(--font-mono);
 }
+/* 图标+文字同行等高(flex 对齐);字号与 .more(查看全部)一致 */
 .link-accent {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  flex: none;
+  font-size: 12px;
   color: var(--accent);
+  white-space: nowrap;
 }
 .link-accent:hover {
   text-decoration: underline;
@@ -226,16 +233,21 @@ blockquote {
     min-height: 190px;
   }
 }
-/* <768:单列(DOM 顺序即显示顺序) */
+/* <768:单列(DOM 顺序即显示顺序)。
+   hero/heatmap 必须一并重置为 span 1:≤1279 规则在 ≤767 仍然命中,
+   若保留 span 2,单列模板会被拖出隐式第二列,小卡自动排布错位重叠 */
 @media (max-width: 767px) {
   .bento {
     grid-template-columns: minmax(0, 1fr);
   }
+  .card--hero,
+  .card--heatmap,
   .card--projects,
   .card--now,
   .card--uses,
   .card--quote {
     grid-column: span 1;
+    grid-row: auto;
     min-height: 0;
   }
 }
@@ -312,7 +324,7 @@ blockquote {
   gap: 14px;
 }
 .hero-title {
-  font-size: clamp(30px, 3.4vw, 44px);
+  font-size: clamp(28px, 3.2vw, 40px);
   font-weight: 700;
   line-height: 1.2;
   letter-spacing: 0.01em;
@@ -320,6 +332,28 @@ blockquote {
 .hero-sub {
   color: var(--text-1);
   font-size: 15px;
+}
+/* neofetch 式键值名片:label 固定宽对齐,值列随内容;尺寸收紧以适配两行高的 HERO 卡 */
+.hero-facts {
+  display: grid;
+  gap: 2px;
+  margin: 0;
+}
+.hero-fact {
+  display: flex;
+  gap: 10px;
+  font-size: 11.5px;
+  line-height: 1.5;
+}
+.hero-fact dt {
+  flex: none;
+  width: 42px;
+  color: var(--text-2);
+  letter-spacing: 0.05em;
+}
+.hero-fact dd {
+  margin: 0;
+  color: var(--text-1);
 }
 .tag-row {
   display: flex;
@@ -342,7 +376,7 @@ blockquote {
   align-items: center;
   gap: 7px;
   min-height: 44px;
-  margin-top: 2px;
+  margin-top: 0;
   padding: 6px 12px 6px 10px;
   align-self: flex-start;
   border: 1px solid var(--glass-border);
@@ -450,6 +484,25 @@ blockquote {
 .hm-cell.future {
   background: rgba(255, 255, 255, 0.02);
 }
+/* 衍生统计条:填充热力图与底栏之间的空档(纯前端计算) */
+.hm-stats {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  margin: 0;
+  padding-top: 12px;
+  border-top: 1px solid var(--glass-border);
+}
+.hm-stat-item dt {
+  font-size: 11px;
+  color: var(--text-2);
+  margin-bottom: 3px;
+}
+.hm-stat-item dd {
+  margin: 0;
+  font-size: 13px;
+  color: var(--text-0);
+}
 .hm-foot {
   display: flex;
   justify-content: space-between;
@@ -478,6 +531,10 @@ blockquote {
   }
   .hm-legend {
     display: none;
+  }
+  .hm-stats {
+    flex-wrap: wrap;
+    gap: 8px 16px;
   }
 }
 

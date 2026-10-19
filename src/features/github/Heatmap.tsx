@@ -1,18 +1,11 @@
 import { site } from '@/content/site';
-import { toHeatmapLevels } from './api';
+import { deriveStats, toHeatmapLevels } from './api';
 import type { ContributionYear } from './api';
 
-/** GitHub mark(lucide 1.x 移除品牌图标后的内联替代,官方 octicon path) */
+/** GitHub mark(lucide 1.x 移除品牌图标后的内联替代,官方 octicon path);对齐由 .link-accent 的 flex 承担 */
 function GithubMark({ size = 12 }: { size?: number }) {
   return (
-    <svg
-      width={size}
-      height={size}
-      viewBox="0 0 16 16"
-      fill="currentColor"
-      aria-hidden="true"
-      style={{ verticalAlign: '-2px', marginRight: 4 }}
-    >
+    <svg width={size} height={size} viewBox="0 0 16 16" fill="currentColor" aria-hidden="true">
       <path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27s1.36.09 2 .27c1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.01 8.01 0 0 0 16 8c0-4.42-3.58-8-8-8Z" />
     </svg>
   );
@@ -31,6 +24,7 @@ export default function Heatmap({ data }: { data: ContributionYear | null }) {
     data?.days ?? Array.from({ length: 53 * 7 }, () => ({ date: '', count: 0, level: 0 as const }));
   const lastReal = days.reduce((acc, d, i) => (d.date ? i : acc), -1);
   const levels = toHeatmapLevels(days, lastReal);
+  const stats = deriveStats(days);
 
   return (
     <>
@@ -73,6 +67,26 @@ export default function Heatmap({ data }: { data: ContributionYear | null }) {
           })}
         </div>
       </div>
+
+      {/* 衍生统计条:填充热力图与底栏之间的空档;数据降级时显示占位符 */}
+      <dl className="hm-stats mono" aria-label="GitHub 贡献统计">
+        <div className="hm-stat-item">
+          <dt>连击</dt>
+          <dd>{data ? `${stats.streak} 天` : '—'}</dd>
+        </div>
+        <div className="hm-stat-item">
+          <dt>单日最高</dt>
+          <dd>{data ? `${stats.best} 次` : '—'}</dd>
+        </div>
+        <div className="hm-stat-item">
+          <dt>活跃天数</dt>
+          <dd>{data ? `${stats.activeDays}/${stats.totalDays}` : '—'}</dd>
+        </div>
+        <div className="hm-stat-item">
+          <dt>最近提交</dt>
+          <dd>{data ? stats.lastActiveLabel : '—'}</dd>
+        </div>
+      </dl>
 
       <footer className="hm-foot">
         <a

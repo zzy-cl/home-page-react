@@ -1,7 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { useNavigate } from '@tanstack/react-router';
-import type { UseNavigateResult } from '@tanstack/react-router';
 import { site } from '@/content/site';
+import { router } from '@/app/router';
 import { applyAccent, nextAccentKey } from '@/lib/accent';
 import { filterCommands } from './registry';
 import type { Command } from './registry';
@@ -16,10 +15,7 @@ interface UiCommand extends Command {
   keepOpen?: boolean;
 }
 
-function buildCommands(
-  navigate: UseNavigateResult<string>,
-  toast: (msg: string) => void,
-): UiCommand[] {
+function buildCommands(toast: (msg: string) => void): UiCommand[] {
   const cmds: UiCommand[] = [
     {
       id: 'nav-home',
@@ -28,7 +24,9 @@ function buildCommands(
       hint: 'index',
       keywords: ['home', 'index', '首页', '工位', 'bento'],
       section: '导航',
-      action: () => void navigate({ to: '/' }),
+      // 面板挂载在 RouterProvider 之外(全局浮层),用单例 router.navigate
+      // 而非 useNavigate——后者依赖 Router 上下文,此处拿不到(TanStack 1.170 起严格校验)
+      action: () => void router.navigate({ to: '/' }),
     },
     {
       id: 'nav-uses',
@@ -37,7 +35,7 @@ function buildCommands(
       hint: '/uses',
       keywords: ['uses', 'gear', '装备', '工具', '技术栈'],
       section: '导航',
-      action: () => void navigate({ to: '/uses' }),
+      action: () => void router.navigate({ to: '/uses' }),
     },
     {
       id: 'nav-now',
@@ -46,7 +44,7 @@ function buildCommands(
       hint: '/now',
       keywords: ['now', '近况', '动态'],
       section: '导航',
-      action: () => void navigate({ to: '/now' }),
+      action: () => void router.navigate({ to: '/now' }),
     },
     {
       id: 'open-github',
@@ -93,7 +91,7 @@ function buildCommands(
         void import('@/features/hitokoto/api').then(({ fetchHitokoto }) =>
           fetchHitokoto().then((h) => toast(h ? `${h.text} —— ${h.from}` : '一言获取失败')),
         );
-        if (window.location.pathname !== '/') void navigate({ to: '/' });
+        if (window.location.pathname !== '/') void router.navigate({ to: '/' });
       },
     },
   ];
@@ -113,7 +111,6 @@ function buildCommands(
 }
 
 export default function CommandPalette() {
-  const navigate = useNavigate();
   const setCommandOpen = useUiStore((s) => s.setCommandOpen);
   const inputRef = useRef<HTMLInputElement>(null);
   const lastFocus = useRef<HTMLElement | null>(null);
@@ -133,7 +130,7 @@ export default function CommandPalette() {
     return () => clearTimeout(timer);
   }, [toastMsg]);
 
-  const commands = useMemo(() => buildCommands(navigate, toast), [navigate, toast]);
+  const commands = useMemo(() => buildCommands(toast), [toast]);
   const filtered = useMemo(
     () => filterCommands(commands as Command[], query) as UiCommand[],
     [commands, query],

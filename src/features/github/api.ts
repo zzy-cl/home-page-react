@@ -94,15 +94,89 @@ export function toHeatmapLevels(
   });
 }
 
-/** 拉取单仓库 star 数(官方 REST,无认证);失败返回 null */
-export async function fetchRepoStars(repo: string): Promise<number | null> {
-  try {
-    const res = await fetch(`https://api.github.com/repos/${repo}`);
-    if (!res.ok) return null;
-    const data = (await res.json()) as { stargazers_count?: unknown };
-    const n = Number(data.stargazers_count);
-    return Number.isFinite(n) ? n : null;
-  } catch {
-    return null;
+/** 热力图衍生统计(纯前端从 days 计算,零额外请求);数据降级时 UI 显示占位符 */
+export interface ContributionStats {
+  /** 连续贡献天数:以最近一次有贡献的日子收尾向前数——截止日没提交不打断,稀疏活跃下比"截至今天"更有信息量 */
+  streak: number;
+  /** 单日最高贡献数 */
+  best: number;
+  /** 有贡献的天数 */
+  activeDays: number;
+  /** 窗口内真实天数(不含首列对齐占位) */
+  totalDays: number;
+  /** 最近一次有贡献相对数据截止日:今天 / 昨天 / N 天前;无活跃记录为 '—' */
+  lastActiveLabel: string;
+}
+
+export function deriveStats(days: ContributionDay[]): ContributionStats {
+  const real = days.filter((d) => d.date);
+  const cutoff = real.at(-1)?.date ?? null;
+  const active = real.filter((d) => d.count > 0);
+  const best = real.reduce((m, d) => Math.max(m, d.count), 0);
+
+  // 连击:跳过尾部无贡献日,从最近一次有贡献起向前数连续;占位格不参与
+  let streak = 0;
+  for (let i = days.length - 1; i >= 0; i--) {
+    const d = days[i];
+    if (!d.date) continue;
+    if (d.count > 0) streak++;
+    else if (streak > 0) break;
   }
+
+  let lastActiveLabel = '—';
+  const lastActive = active.at(-1)?.date;
+  if (cutoff && lastActive) {
+    const diff = Math.round((Date.parse(cutoff) - Date.parse(lastActive)) / 86_400_000);
+    lastActiveLabel = diff <= 0 ? '今天' : diff === 1 ? '昨天' : `${diff} 天前`;
+  }
+
+  return {
+    streak,
+    best,
+    activeDays: active.length,
+    totalDays: real.length,
+    lastActiveLabel,
+  };
+}
+
+/**
+ * 拉取单仓库 star 数,三级兜底链(逐级尝试,全失败返回 null):
+ * 1. 官方 REST——最准;但未认证限额 60 次/时/IP,大陆网络与共享出口经常 403
+ * 2. shields.io JSON——CDN 重度缓存、可用性好;value 为字符串且 ≥1k 会缩写(如 '1.2k'),非纯数字视为失败
+ * 3. ungh.cc 公共镜像——服务端 token 池偶发 429,作末位兜底
+ */
+export function parseStarsDirect(payload: unknown): number | null {
+  const n = (payload as { stargazers_count?: unknown } | null)?.stargazers_count;
+  return typeof n === 'number' && Number.isFinite(n) ? n : null;
+}
+
+export function parseStarsShields(payload: unknown): number | null {
+  const v = (payload as { value?: unknown } | null)?.value;
+  return typeof v === 'string' && /^\d+$/.test(v) ? Number(v) : null;
+}
+
+export function parseStarsUngh(payload: unknown): number | null {
+  const n = (payload as { repo?: { stars?: unknown } | null })?.repo?.stars;
+  return typeof n === 'number' && Number.isFinite(n) ? n : null;
+}
+
+export async function fetchRepoStars(repo: string): Promise<number | null> {
+  const attempt = async (
+    url: string,
+    parse: (payload: unknown) => number | null,
+  ): Promise<number | null> => {
+    try {
+      const res = await fetch(url);
+      if (!res.ok) return null;
+      return parse(await res.json());
+    } catch {
+      return null;
+    }
+  };
+
+  return (
+    (await attempt(`https://api.github.com/repos/${repo}`, parseStarsDirect)) ??
+    (await attempt(`https://img.shields.io/github/stars/${repo}.json`, parseStarsShields)) ??
+    (await attempt(`https://ungh.cc/repos/${repo}`, parseStarsUngh))
+  );
 }

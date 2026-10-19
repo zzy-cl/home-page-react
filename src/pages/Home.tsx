@@ -38,9 +38,17 @@ function Home() {
       <div className="bento">
         {/* ① HERO */}
         <BentoCard variant="hero" index={0} label="站长信息">
-          <div style={{ display: 'grid', gap: 10 }}>
+          <div style={{ display: 'grid', gap: 8 }}>
             <h1 className="hero-title">{site.name}</h1>
             <p className="hero-sub">{site.tagline}</p>
+            <dl className="hero-facts mono">
+              {site.facts.map((f) => (
+                <div key={f.label} className="hero-fact">
+                  <dt>{f.label}</dt>
+                  <dd>{f.value}</dd>
+                </div>
+              ))}
+            </dl>
           </div>
           <ul className="tag-row" aria-label="技术关键词">
             {site.keywords.map((k) => (
@@ -90,7 +98,8 @@ function Home() {
                 </>
               );
               return (
-                <li key={p.repo}>
+                // repo 为 null 的占位项目不止一个,以 name 兜底保证 key 唯一
+                <li key={p.repo ?? p.name}>
                   {p.repo ? (
                     <a
                       className="proj-row"

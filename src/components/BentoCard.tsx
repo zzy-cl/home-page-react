@@ -1,32 +1,47 @@
-import type { ReactNode } from 'react'
+import type { CSSProperties, ReactNode } from 'react'
 
 interface BentoCardProps {
-  /** 卡片左上角标题(可选) */
-  title?: string
-  /** 追加类名(布局 span 由调用方传入) */
+  /** 卡片样式变体(设计稿 .card--hero 等) */
+  variant: 'hero' | 'heatmap' | 'projects' | 'now' | 'uses' | 'quote'
+  /** mono 大写小标题(GITHUB / NOW / PROJECTS…) */
+  kicker?: string
+  /** 无障碍名称 */
+  label: string
+  /** 入场交错序号(设计稿 --i) */
+  index: number
   className?: string
   children: ReactNode
 }
 
+const VARIANT_CLASS: Record<BentoCardProps['variant'], string> = {
+  hero: 'card--hero',
+  heatmap: 'card--heatmap',
+  projects: 'card--projects',
+  now: 'card--now',
+  uses: 'card--uses',
+  quote: 'card--quote',
+}
+
 /**
- * Bento 卡片原语:玻璃材质 + 交错入场(spec §3.2)。
- * 入场动画为纯 CSS(.bento-grid 内 nth-child 交错 delay),
- * hover 仅 scale(1.01) —— 动画红线:只动 transform/opacity。
+ * Bento 卡片原语:玻璃渐变 + 内高光 + hover accent 描边 + 交错入场。
+ * 视觉规格来自 OpenDesign 设计稿(.card / .card-kicker)。
  */
-export default function BentoCard({ title, className = '', children }: BentoCardProps) {
+export default function BentoCard({
+  variant,
+  kicker,
+  label,
+  index,
+  className = '',
+  children,
+}: BentoCardProps) {
   return (
-    <section className={`glass-card bento-item p-5 transition-transform duration-200 hover:scale-[1.01] ${className}`}>
-      {title && (
-        <div className="mono mb-3 text-xs tracking-widest" style={{ color: 'var(--text-2)' }}>
-          {title}
-        </div>
-      )}
+    <section
+      className={`card ${VARIANT_CLASS[variant]} ${className}`}
+      style={{ '--i': index } as CSSProperties}
+      aria-label={label}
+    >
+      {kicker && <h2 className="card-kicker">{kicker}</h2>}
       {children}
     </section>
   )
-}
-
-/** Bento 网格容器:子项交错入场由 CSS nth-child 编排(见 index.css) */
-export function BentoGrid({ children, className = '' }: { children: ReactNode; className?: string }) {
-  return <div className={`bento-grid ${className}`}>{children}</div>
 }

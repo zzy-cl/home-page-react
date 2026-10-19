@@ -1,37 +1,31 @@
 import { lazy, Suspense } from 'react'
-import { createRootRoute, createRoute, createRouter, Link, Outlet } from '@tanstack/react-router'
+import { Outlet, createRootRoute, createRoute, createRouter } from '@tanstack/react-router'
 import { site } from '@/content/site'
 
-// 页面级代码分割:三个路由各自 lazy(spec §6.4)
+// 页面级代码分割(spec §6.4)
 const HomePage = lazy(() => import('@/pages/Home'))
 const UsesPage = lazy(() => import('@/pages/Uses'))
 const NowPage = lazy(() => import('@/pages/Now'))
 
 function RootLayout() {
   return (
-    <div className="min-h-screen">
+    <>
       <Suspense fallback={null}>
         <Outlet />
       </Suspense>
-      <footer className="fixed bottom-3 left-0 right-0 text-center">
-        <span className="mono text-xs" style={{ color: 'var(--text-2)' }}>
-          <Link to="/">{site.name}</Link> · {new Date().getFullYear()}
-          {/* ICP 备案:国内托管合规要求(spec §1.3 沿用现状);icp 为空时自动隐藏 */}
-          {site.icp && (
-            <>
-              {' · '}
-              <a
-                href="https://beian.miit.gov.cn"
-                target="_blank"
-                rel="noopener noreferrer"
-              >
-                {site.icp}
-              </a>
-            </>
-          )}
-        </span>
+      {/* 固定页脚(设计稿 .site-footer):ICP 备案为合规必须,icp 为空时自动隐藏 */}
+      <footer className="site-footer">
+        {site.name} · {new Date().getFullYear()}
+        {site.icp && (
+          <>
+            {' · '}
+            <a href="https://beian.miit.gov.cn/" target="_blank" rel="noopener noreferrer">
+              {site.icp}
+            </a>
+          </>
+        )}
       </footer>
-    </div>
+    </>
   )
 }
 

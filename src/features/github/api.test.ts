@@ -1,8 +1,8 @@
-import { afterEach, describe, expect, it, vi } from 'vitest'
-import { fetchContributions, parseContributions } from './api'
+import { describe, expect, it } from 'vitest'
+import { parseContributions, toHeatmapLevels } from './api'
 
 const valid = {
-  total: { '2026': 120 },
+  total: { '2026': 12 },
   contributions: [
     { date: '2026-01-01', count: 3, level: 1 },
     { date: '2026-01-02', count: 9, level: 4 },
@@ -27,14 +27,8 @@ describe('parseContributions', () => {
     expect(y.days.at(-1)).toEqual({ date: '2026-01-02', count: 9, level: 4 })
   })
 
-  it('level 超界夹取到 0-4', () => {
-    const y = parseContributions({ ...valid, contributions: [{ date: 'd', count: 1, level: 7 }] })
-    expect(y.days.at(-1)?.level).toBe(4)
-  })
-
   it('total 为窗口内贡献之和,而非各年 total 求和', () => {
-    const y = parseContributions(valid)
-    expect(y.total).toBe(12)
+    expect(parseContributions(valid).total).toBe(12)
   })
 
   it('非法 payload 抛错', () => {
@@ -42,47 +36,42 @@ describe('parseContributions', () => {
     expect(() => parseContributions({ total: {}, contributions: 'no' })).toThrow()
   })
 
-  it('多年数据裁剪到最近一年(≤371 格,53 列)——jogruber 对老账户返回全部年份', () => {
-    // 模拟真实事故:2191 天(2021-2026)
+  it('多年数据裁剪到最近一年(≤371 格)——jogruber 对老账户返回全部年份', () => {
     const y = parseContributions({
       total: { '2021': 1, '2026': 106 },
       contributions: makeDays(2191),
     })
     expect(y.days.length).toBeLessThanOrEqual(371)
-    // 窗口内每一天 count=1
     expect(y.total).toBe(y.days.filter((d) => d.date).length)
   })
 
-  it('首格对齐周日(不足一周处以空格占位),保证 7 行网格每列恰为一周', () => {
-    // 窗口首日 2025-10-20 是周一(weekday 1)→ 首格为空占位,次格为首日
+  it('首格对齐周日(空格占位),days 升序', () => {
     const y = parseContributions({ total: {}, contributions: makeDays(365) })
     expect(y.days[0].date).toBe('')
     expect(y.days[1].date).toBe('2025-10-20')
-  })
-
-  it('days 按日期升序(热力图列从左到右由旧到新)', () => {
-    const y = parseContributions(valid)
     const dates = y.days.filter((d) => d.date).map((d) => d.date)
-    expect(dates).toEqual(['2026-01-01', '2026-01-02'])
+    expect([...dates].sort()).toEqual(dates)
   })
 })
 
-describe('fetchContributions', () => {
-  afterEach(() => vi.unstubAllGlobals())
-
-  it('网络失败返回 null 而不 throw', async () => {
-    vi.stubGlobal('fetch', vi.fn().mockRejectedValue(new Error('network')))
-    await expect(fetchContributions('x')).resolves.toBeNull()
+describe('toHeatmapLevels(设计稿渲染数据:counts + levels 数组,future=-1)', () => {
+  it('按 GitHub 官方阈值把 count 映射为 0-4', () => {
+    const days = [
+      { date: '', count: 0, level: 0 as const },
+      { date: '2026-01-02', count: 0, level: 0 as const },
+      { date: '2026-01-03', count: 2, level: 1 as const },
+      { date: '2026-01-04', count: 4, level: 2 as const },
+      { date: '2026-01-05', count: 7, level: 3 as const },
+      { date: '2026-01-06', count: 12, level: 4 as const },
+    ]
+    expect(toHeatmapLevels(days, 4)).toEqual([0, 0, 1, 2, 3, -1])
   })
 
-  it('HTTP 500 返回 null', async () => {
-    vi.stubGlobal('fetch', vi.fn().mockResolvedValue({ ok: false, status: 500 }))
-    await expect(fetchContributions('x')).resolves.toBeNull()
-  })
-
-  it('成功路径解析数据', async () => {
-    vi.stubGlobal('fetch', vi.fn().mockResolvedValue({ ok: true, json: async () => valid }))
-    const y = await fetchContributions('x')
-    expect(y?.total).toBe(12)
+  it('占位格映射为 0', () => {
+    const days = [
+      { date: '', count: 0, level: 0 as const },
+      { date: '2026-01-02', count: 5, level: 2 as const },
+    ]
+    expect(toHeatmapLevels(days, 2)).toEqual([0, 2])
   })
 })

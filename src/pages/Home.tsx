@@ -1,7 +1,5 @@
 import { Link } from '@tanstack/react-router'
-import { Star } from 'lucide-react'
-import BentoCard, { BentoGrid } from '@/components/BentoCard'
-import Kbd from '@/components/Kbd'
+import BentoCard from '@/components/BentoCard'
 import { site } from '@/content/site'
 import { projects } from '@/content/projects.data'
 import { useSections } from '@/content/uses'
@@ -12,154 +10,126 @@ import { loadNowEntries } from '@/lib/md'
 import { useUiStore } from '@/store/ui'
 
 /*
- * 首屏布局(spec §4.1 的 12 列实现):
- *   行1-2: Hero 4(row2) | GitHub 热力图 8(row2)
- *   行3:   精选项目 4 | NOW 摘要 3 | USES 摘要 3 | 一言 2
- *   Cmd+K 提示并入 Hero 底缘(提示性元素不值得独占卡片)
- * lg 固定行高 170px 生成仪表盘感;外层 min-h-svh 垂直居中。
+ * 首页(设计稿 index.html 1:1):
+ * 行1-2: HERO 4(row2) | GITHUB 热力图 8(row2)
+ * 行3:   PROJECTS 4 | NOW 3 | USES 3 | 一言 2
  */
 function Home() {
-  // 构建期已收集的 /now 条目(按日期倒序),首条作为摘要卡数据
   const nowEntries = loadNowEntries()
   const latest = nowEntries[0]
-  // GitHub 数据(失败时为 null,卡片内降级)
   const { data: contributions } = useContributions()
   const { data: stars } = useRepoStars()
-  const starsByRepo = new Map((stars ?? []).map((s) => [s.repo, s.stars]))
+  const starsByRepo = new Map((stars ?? []).filter((s) => s.stars !== null).map((s) => [s.repo, s.stars]))
+  const openPalette = () => useUiStore.getState().setCommandOpen(true)
 
   const nowSummary = latest
-    ? latest.body.length > 60
-      ? `${latest.body.slice(0, 60)}…`
+    ? latest.body.length > 96
+      ? `${latest.body.slice(0, 96)}…`
       : latest.body
     : null
-
-  const usesPreview = useSections.flatMap((s) => s.items.slice(0, 1).map((i) => i.name)).slice(0, 3)
+  const usesPreview = useSections
+    .flatMap((s) => s.items.slice(0, 1).map((i) => i.name))
+    .slice(0, 3)
 
   return (
-    <div className="flex min-h-svh items-center">
-      <BentoGrid className="mx-auto grid w-full max-w-7xl grid-cols-1 gap-[var(--gap-grid)] p-4 md:grid-cols-2 lg:auto-rows-[170px] lg:grid-cols-12">
-        {/* Hero: col-span-4 row-span-2,底部 Cmd+K 提示 */}
-        <BentoCard className="flex flex-col justify-between md:col-span-2 lg:col-span-4 lg:row-span-2">
-          <div>
-            <h1 className="text-4xl font-bold lg:text-5xl">{site.name}</h1>
-            <p className="mt-3 text-base" style={{ color: 'var(--text-1)' }}>
-              {site.tagline}
-            </p>
-            <div className="mt-5 flex flex-wrap gap-2">
-              {site.keywords.map((k) => (
-                <span
-                  key={k}
-                  className="mono rounded-full px-2.5 py-1 text-[11px]"
-                  style={{
-                    background: 'var(--glass-bg)',
-                    border: '1px solid var(--glass-border)',
-                    color: 'var(--text-1)',
-                  }}
-                >
-                  {k}
-                </span>
-              ))}
-            </div>
+    <main className="page page-home">
+      <div className="bento">
+        {/* ① HERO */}
+        <BentoCard variant="hero" index={0} label="站长信息">
+          <div style={{ display: 'grid', gap: 10 }}>
+            <h1 className="hero-title">{site.name}</h1>
+            <p className="hero-sub">{site.tagline}</p>
           </div>
-          {/* 点击呼出面板:移动端无键盘,这是面板与终端的唯一入口(Review Focus 5) */}
-          <button
-            type="button"
-            className="mt-6 flex cursor-pointer items-center gap-2 transition-colors"
-            style={{ color: 'var(--text-2)' }}
-            onClick={() => useUiStore.getState().setCommandOpen(true)}
-          >
-            <Kbd>Ctrl</Kbd>
-            <Kbd>K</Kbd>
-            <span className="mono text-[11px]">全站指令</span>
-          </button>
-        </BentoCard>
-
-        {/* GitHub 热力图: col-span-8 row-span-2 */}
-        <BentoCard title="GITHUB" className="lg:col-span-8 lg:row-span-2 md:col-span-2">
-          <Heatmap data={contributions ?? null} />
-        </BentoCard>
-
-        {/* 精选项目: col-span-4 */}
-        <BentoCard title="PROJECTS" className="md:col-span-2 lg:col-span-4">
-          <ul className="space-y-2.5">
-            {projects.map((p) => (
-              <li key={p.repo}>
-                <a
-                  href={`https://github.com/${p.repo}`}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="flex items-baseline justify-between gap-3"
-                >
-                  <span className="min-w-0">
-                    <span className="mono text-sm" style={{ color: 'var(--text-0)' }}>
-                      {p.name}
-                    </span>
-                    <span className="ml-2 hidden text-xs xl:inline" style={{ color: 'var(--text-1)' }}>
-                      {p.desc}
-                    </span>
-                  </span>
-                  <span
-                    className="mono flex shrink-0 items-center gap-1 text-xs"
-                    style={{ color: 'var(--text-1)' }}
-                  >
-                    <Star size={12} style={{ color: 'var(--accent)' }} />
-                    {starsByRepo.get(p.repo) ?? '--'}
-                  </span>
-                </a>
+          <ul className="tag-row" aria-label="技术关键词">
+            {site.keywords.map((k) => (
+              <li key={k} className="pill">
+                {k}
               </li>
             ))}
           </ul>
+          {/* 点击呼出面板:移动端无键盘,这是面板与终端的唯一入口 */}
+          <button className="kbd-hint" type="button" onClick={openPalette} aria-label="打开全站指令面板(Ctrl+K)">
+            <kbd>Ctrl</kbd>
+            <kbd>K</kbd>
+            <span>全站指令</span>
+            <span className="chev mono" aria-hidden="true">
+              ▸
+            </span>
+          </button>
         </BentoCard>
 
-        {/* /now 摘要: col-span-3 */}
-        <BentoCard title="NOW" className="lg:col-span-3">
-          {nowSummary ? (
-            <>
-              <p
-                className="text-sm leading-relaxed"
-                style={{ color: 'var(--text-1)', display: '-webkit-box', WebkitLineClamp: 3, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}
-              >
-                {nowSummary}
-              </p>
-              <Link to="/now" className="mono mt-2 inline-block text-xs" style={{ color: 'var(--accent)' }}>
-                查看全部 →
-              </Link>
-            </>
-          ) : (
-            <p className="text-sm" style={{ color: 'var(--text-2)' }}>
-              暂无近况
-            </p>
-          )}
+        {/* ② GITHUB 热力图 */}
+        <BentoCard variant="heatmap" index={1} label="GitHub 活跃概览">
+          <Heatmap data={contributions ?? null} />
         </BentoCard>
 
-        {/* /uses 摘要: col-span-3 */}
-        <BentoCard title="USES" className="lg:col-span-3">
-          {usesPreview.length > 0 ? (
-            <>
-              <div className="flex flex-wrap gap-x-3 gap-y-1.5">
-                {usesPreview.map((name) => (
-                  <span key={name} className="mono text-xs" style={{ color: 'var(--text-1)' }}>
-                    {name}
+        {/* ③ PROJECTS */}
+        <BentoCard variant="projects" index={2} kicker="PROJECTS" label="精选项目">
+          <ul className="proj-list" aria-label="精选项目列表">
+            {projects.map((p) => {
+              const stars = p.repo ? starsByRepo.get(p.repo) : undefined
+              const inner = (
+                <>
+                  <span className="proj-main">
+                    <span className="proj-name">{p.name}</span>
+                    <span className="proj-desc">{p.desc}</span>
                   </span>
-                ))}
-              </div>
-              <Link to="/uses" className="mono mt-2 inline-block text-xs" style={{ color: 'var(--accent)' }}>
-                查看全部 →
-              </Link>
-            </>
-          ) : (
-            <p className="text-sm" style={{ color: 'var(--text-2)' }}>
-              暂无内容
-            </p>
-          )}
+                  <span className="proj-stars">
+                    <span className="star" aria-hidden="true">
+                      ★
+                    </span>
+                    {stars ?? '--'}
+                  </span>
+                </>
+              )
+              return (
+                <li key={p.repo}>
+                  {p.repo ? (
+                    <a
+                      className="proj-row"
+                      href={`https://github.com/${p.repo}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                    >
+                      {inner}
+                    </a>
+                  ) : (
+                    <div className="proj-row">{inner}</div>
+                  )}
+                </li>
+              )
+            })}
+          </ul>
         </BentoCard>
 
-        {/* 一言: col-span-2 */}
-        <BentoCard title="一言" className="md:col-span-2 lg:col-span-2">
+        {/* ④ NOW */}
+        <BentoCard variant="now" index={3} kicker="NOW" label="近况摘要">
+          <p className="card-body">{nowSummary ?? '暂无近况'}</p>
+          <Link className="more" to="/now">
+            查看全部 →
+          </Link>
+        </BentoCard>
+
+        {/* ⑤ USES */}
+        <BentoCard variant="uses" index={4} kicker="USES" label="装备摘要">
+          <ul className="tag-row" aria-label="常用装备">
+            {usesPreview.map((name) => (
+              <li key={name} className="pill">
+                {name}
+              </li>
+            ))}
+          </ul>
+          <Link className="more" to="/uses">
+            查看全部 →
+          </Link>
+        </BentoCard>
+
+        {/* ⑥ 一言 */}
+        <BentoCard variant="quote" index={5} kicker="一言" label="一言">
           <HitokotoCard />
         </BentoCard>
-      </BentoGrid>
-    </div>
+      </div>
+    </main>
   )
 }
 

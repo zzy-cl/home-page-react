@@ -13,13 +13,14 @@ export function useContributions() {
   })
 }
 
-/** 精选项目 star 数(逐仓库并行请求) */
+/** 精选项目 star 数(逐仓库并行请求;无仓库的占位行跳过) */
 export function useRepoStars() {
+  const liveRepos = projects.filter((p): p is typeof p & { repo: string } => !!p.repo)
   return useQuery({
-    queryKey: ['gh-stars', projects.map((p) => p.repo)],
+    queryKey: ['gh-stars', liveRepos.map((p) => p.repo)],
     queryFn: async () =>
       Promise.all(
-        projects.map(async (p) => ({
+        liveRepos.map(async (p) => ({
           repo: p.repo,
           stars: await fetchRepoStars(p.repo),
         })),

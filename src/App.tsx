@@ -15,9 +15,8 @@ const queryClient = new QueryClient({
   },
 })
 
-// 彩蛋层动态加载(spec §6.4):按需条件挂载——首次触发才拉取 chunk,不占首屏预算。
-// 注意:本文件不得静态 import 彩蛋组件(热键逻辑在 app/hotkeys.ts,与 UI 分离)。
-// 两个独立 Suspense 边界,避免一个挂起卸掉另一个。
+// 彩蛋层动态加载(spec §6.4):按需条件挂载——首次触发才拉取 chunk。
+// 本文件不得静态 import 彩蛋组件(热键逻辑在 app/hotkeys.ts)。
 const CommandPalette = lazy(() => import('@/features/command/CommandPalette'))
 const Terminal = lazy(() => import('@/features/terminal/Terminal'))
 

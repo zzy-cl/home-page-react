@@ -2,139 +2,179 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useNavigate } from '@tanstack/react-router'
 import type { UseNavigateResult } from '@tanstack/react-router'
 import { site } from '@/content/site'
-import { fetchHitokoto } from '@/features/hitokoto/api'
-import { applyAccent, ACCENTS } from '@/lib/accent'
-import { filterCommands, type Command } from './registry'
+import { applyAccent, nextAccentKey } from '@/lib/accent'
+import { filterCommands } from './registry'
+import type { Command } from './registry'
 import { useUiStore } from '@/store/ui'
 
-function buildCommands(navigate: UseNavigateResult<string>, toast: (msg: string) => void): Command[] {
-  const cmds: Command[] = [
+const PALETTE_HINT = '↑↓ 选择 · Enter 执行 · Esc 关闭'
+
+interface UiCommand extends Command {
+  desc: string
+  hint: string
+  /** 执行后面板保持打开(设计稿:主题切换需要看到 toast 反馈) */
+  keepOpen?: boolean
+}
+
+function buildCommands(
+  navigate: UseNavigateResult<string>,
+  toast: (msg: string) => void,
+): UiCommand[] {
+  const cmds: UiCommand[] = [
     {
       id: 'nav-home',
       title: '前往:首页',
-      keywords: ['home', 'index', '首页'],
+      desc: '回到 Bento 工位',
+      hint: 'index',
+      keywords: ['home', 'index', '首页', '工位', 'bento'],
       section: '导航',
       action: () => void navigate({ to: '/' }),
     },
     {
       id: 'nav-uses',
       title: '前往:装备清单',
-      keywords: ['uses', 'gear', '装备'],
+      desc: '硬件、工具与技术栈',
+      hint: '/uses',
+      keywords: ['uses', 'gear', '装备', '工具', '技术栈'],
       section: '导航',
       action: () => void navigate({ to: '/uses' }),
     },
     {
       id: 'nav-now',
       title: '前往:近况',
-      keywords: ['now', '近况'],
+      desc: '最近在折腾什么',
+      hint: '/now',
+      keywords: ['now', '近况', '动态'],
       section: '导航',
       action: () => void navigate({ to: '/now' }),
     },
     {
       id: 'open-github',
       title: '打开:GitHub',
-      keywords: ['github', '仓库', '代码'],
+      desc: `github.com/${site.githubUser},新窗口打开`,
+      hint: '↗',
+      keywords: ['github', '仓库', '开源', site.githubUser],
       section: '链接',
       action: () => window.open(site.github, '_blank', 'noopener'),
     },
     {
+      id: 'theme-accent',
+      title: '切换强调色',
+      desc: '静谧蓝 → 暖橙 → 紫罗兰,立即全站生效',
+      hint: '蓝→橙→紫',
+      keywords: ['theme', 'accent', '主题', '颜色', '蓝', '橙', '紫'],
+      section: '主题',
+      keepOpen: true,
+      action: () => {
+        const current = document.documentElement.getAttribute('data-accent') ?? 'blue'
+        const next = nextAccentKey(current)
+        const msg = applyAccent(next, true)
+        if (msg) toast(msg)
+      },
+    },
+    {
       id: 'terminal',
       title: '终端模式',
-      keywords: ['terminal', '终端', 'shell'],
+      desc: '极客彩蛋,输入 help 看看',
+      hint: '~',
+      keywords: ['terminal', '终端', 'shell', '彩蛋'],
       section: '趣项',
       action: () => useUiStore.getState().openTerminal(),
+    },
+    {
+      id: 'fun-quote',
+      title: '一言:来一条',
+      desc: '换一句话',
+      hint: '↻',
+      keywords: ['quote', '一言', 'hitokoto', '换'],
+      section: '趣项',
+      action: () => {
+        // 面板内 toast 反馈;一言卡在首页,若不在首页则先回去
+        void import('@/features/hitokoto/api').then(({ fetchHitokoto }) =>
+          fetchHitokoto().then((h) => toast(h ? `${h.text} —— ${h.from}` : '一言获取失败')),
+        )
+        if (window.location.pathname !== '/') void navigate({ to: '/' })
+      },
     },
   ]
   // email 可选:site.email 未配置则不出现该命令
   if (site.email) {
-    cmds.push({
+    cmds.splice(4, 0, {
       id: 'open-email',
       title: '打开:Email',
+      desc: '来封邮件聊聊',
+      hint: '✉',
       keywords: ['email', '邮件', '联系'],
       section: '链接',
       action: () => window.open(`mailto:${site.email}`, '_self'),
     })
   }
-  cmds.push({
-    id: 'theme-accent',
-    title: '主题:切换强调色',
-    keywords: ['theme', 'accent', '颜色', '主题'],
-    section: '主题',
-    action: () => {
-      const current = getComputedStyle(document.documentElement).getPropertyValue('--accent').trim()
-      const idx = ACCENTS.indexOf(current as (typeof ACCENTS)[number])
-      const next = ACCENTS[(idx + 1) % ACCENTS.length]
-      applyAccent(next)
-      toast(`强调色已切换为 ${next}`)
-    },
-  })
-  cmds.push({
-    id: 'fun-fortune',
-    title: '一言:来一条',
-    keywords: ['fortune', '一言', '句子'],
-    section: '趣项',
-    action: () => {
-      void fetchHitokoto().then((h) => toast(h ? `${h.text} —— ${h.from}` : '一言获取失败'))
-    },
-  })
   return cmds
 }
 
 export default function CommandPalette() {
   const navigate = useNavigate()
   const { commandOpen, setCommandOpen } = useUiStore()
-  const dialogRef = useRef<HTMLDialogElement>(null)
   const inputRef = useRef<HTMLInputElement>(null)
+  const lastFocus = useRef<HTMLElement | null>(null)
   const toastTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
 
   const [query, setQuery] = useState('')
   const [active, setActive] = useState(0)
-  const [toastMsg, setToastMsg] = useState<string | null>(null)
+  const [toastMsg, setToastMsg] = useState<string>(PALETTE_HINT)
 
-  // 轻提示:渲染在 dialog 之外的固定浮层——fortune 为异步结果、
-  // theme 在执行后面板即关闭,toast 必须独立于 dialog 存活才能被看到
+  // 面板内 toast 行:默认显示键位提示,命令反馈 2.6s 后回落(设计稿 palToast)
   const toast = useCallback((msg: string) => {
     setToastMsg(msg)
     if (toastTimer.current) clearTimeout(toastTimer.current)
-    toastTimer.current = setTimeout(() => setToastMsg(null), 3000)
+    toastTimer.current = setTimeout(() => setToastMsg(PALETTE_HINT), 2600)
   }, [])
 
   const commands = useMemo(() => buildCommands(navigate, toast), [navigate, toast])
-  const filtered = useMemo(() => filterCommands(commands, query), [commands, query])
+  const filtered = useMemo(
+    () => filterCommands(commands as Command[], query) as UiCommand[],
+    [commands, query],
+  )
 
-  // dialog 开关同步 store;打开时重置输入并聚焦
+  // 打开/关闭同步:输入重置、焦点进入与恢复(设计稿 openPalette/closeOverlay)
   useEffect(() => {
-    const dlg = dialogRef.current
-    if (!dlg) return
-    if (commandOpen && !dlg.open) {
+    if (commandOpen) {
+      lastFocus.current = document.activeElement as HTMLElement | null
       setQuery('')
       setActive(0)
-      dlg.showModal()
-      inputRef.current?.focus()
-    } else if (!commandOpen && dlg.open) {
-      dlg.close()
+      setToastMsg(PALETTE_HINT)
+      try {
+        inputRef.current?.focus({ preventScroll: true })
+      } catch {
+        inputRef.current?.focus()
+      }
+    } else if (lastFocus.current) {
+      try {
+        lastFocus.current.focus({ preventScroll: true })
+      } catch {
+        lastFocus.current.focus()
+      }
+      lastFocus.current = null
     }
   }, [commandOpen])
 
-  // 原生 dialog 的 Esc/遮罩点击都会触发 close 事件,同步回 store
-  useEffect(() => {
-    const dlg = dialogRef.current
-    if (!dlg) return
-    const onClose = () => setCommandOpen(false)
-    dlg.addEventListener('close', onClose)
-    return () => dlg.removeEventListener('close', onClose)
-  }, [setCommandOpen])
-
-  // 卸载时清掉未熄灭的 toast 定时器
-  useEffect(() => () => {
-    if (toastTimer.current) clearTimeout(toastTimer.current)
-  }, [])
+  useEffect(
+    () => () => {
+      if (toastTimer.current) clearTimeout(toastTimer.current)
+    },
+    [],
+  )
 
   const execute = useCallback(
-    (cmd: Command | undefined) => {
+    (cmd: UiCommand | undefined) => {
       if (!cmd) return
-      setCommandOpen(false)
+      if (!cmd.keepOpen) setCommandOpen(false)
+      else {
+        setQuery('')
+        setActive(0)
+      }
       cmd.action()
+      if (cmd.keepOpen) inputRef.current?.focus()
     },
     [setCommandOpen],
   )
@@ -142,46 +182,43 @@ export default function CommandPalette() {
   const onKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === 'ArrowDown') {
       e.preventDefault()
-      setActive((i) => Math.min(i + 1, filtered.length - 1))
+      setActive((i) => (filtered.length ? (i + 1) % filtered.length : 0))
     } else if (e.key === 'ArrowUp') {
       e.preventDefault()
-      setActive((i) => Math.max(i - 1, 0))
+      setActive((i) => (filtered.length ? (i - 1 + filtered.length) % filtered.length : 0))
     } else if (e.key === 'Enter') {
       e.preventDefault()
       execute(filtered[active])
+    } else if (e.key === 'Escape') {
+      e.preventDefault()
+      setCommandOpen(false)
     }
   }
 
-  // 按 section 分组展示
+  // 按 section 分组;顺带记录全局索引供高亮
   const sections = useMemo(() => {
-    const map = new Map<string, Command[]>()
-    let idx = 0
-    // 依赖 filtered 的顺序,顺便记录全局索引供高亮比对(避免 O(n²) indexOf)
-    const indexed = filtered.map((cmd) => ({ cmd, idx: idx++ }))
-    for (const { cmd } of indexed) {
+    const map = new Map<string, Array<{ cmd: UiCommand; idx: number }>>()
+    filtered.forEach((cmd, idx) => {
       const list = map.get(cmd.section) ?? []
-      list.push(cmd)
+      list.push({ cmd, idx })
       map.set(cmd.section, list)
-    }
+    })
     return [...map.entries()]
   }, [filtered])
 
+  if (!commandOpen) return null
+
   return (
-    <>
-      <dialog
-        ref={dialogRef}
-        className="glass-card m-auto w-[min(560px,92vw)] p-0 text-left backdrop:bg-black/60"
-        style={{ color: 'var(--text-0)' }}
-        onClick={(e) => {
-          // 点击遮罩(事件目标是 dialog 自身)时关闭
-          if (e.target === dialogRef.current) setCommandOpen(false)
-        }}
-      >
-        <div
-          className="flex items-center gap-2 border-b px-4 py-3"
-          style={{ borderColor: 'var(--glass-border)' }}
-        >
-          <span className="mono text-xs" style={{ color: 'var(--text-2)' }}>
+    <div
+      className="md-overlay"
+      onMouseDown={(e) => {
+        // 点击遮罩关闭
+        if (e.target === e.currentTarget) setCommandOpen(false)
+      }}
+    >
+      <div className="md-palette" role="dialog" aria-modal="true" aria-label="全站指令面板">
+        <div className="palette-input">
+          <span className="palette-prefix" aria-hidden="true">
             &gt;
           </span>
           <input
@@ -193,63 +230,45 @@ export default function CommandPalette() {
             }}
             onKeyDown={onKeyDown}
             placeholder="输入命令或搜索…"
-            className="mono w-full bg-transparent text-sm outline-none"
-            style={{ color: 'var(--text-0)' }}
+            autoComplete="off"
+            spellCheck={false}
+            aria-label="搜索命令"
           />
-          <kbd className="mono text-xs" style={{ color: 'var(--text-2)' }}>
-            Esc
-          </kbd>
         </div>
 
-        <div className="max-h-[50vh] overflow-y-auto p-2">
+        <div className="palette-list" role="listbox" aria-label="命令列表">
           {filtered.length === 0 ? (
-            <div className="px-3 py-6 text-center text-sm" style={{ color: 'var(--text-2)' }}>
-              无匹配命令
-            </div>
+            <div className="palette-empty">没有匹配的命令,试试 help / theme / go</div>
           ) : (
             sections.map(([section, list]) => (
-              <div key={section} className="mb-1">
-                <div
-                  className="mono px-3 py-1.5 text-[10px] tracking-widest"
-                  style={{ color: 'var(--text-2)' }}
-                >
-                  {section}
-                </div>
-                {list.map((cmd) => {
-                  const idx = filtered.indexOf(cmd)
-                  const isActive = idx === active
-                  return (
-                    <button
-                      key={cmd.id}
-                      type="button"
-                      className="flex w-full items-center rounded-[var(--radius-inner)] px-3 py-2 text-left text-sm"
-                      style={{
-                        background: isActive ? 'var(--glass-bg)' : 'transparent',
-                        color: isActive ? 'var(--text-0)' : 'var(--text-1)',
-                      }}
-                      onMouseEnter={() => setActive(idx)}
-                      onClick={() => execute(cmd)}
-                    >
-                      {cmd.title}
-                    </button>
-                  )
-                })}
+              <div key={section}>
+                <div className="group-label">{section}</div>
+                {list.map(({ cmd, idx }) => (
+                  <button
+                    key={cmd.id}
+                    type="button"
+                    role="option"
+                    aria-selected={idx === active}
+                    className={`cmd${idx === active ? ' sel' : ''}`}
+                    onMouseEnter={() => setActive(idx)}
+                    onClick={() => execute(cmd)}
+                  >
+                    <span className="cmd-main">
+                      <span>{cmd.title}</span>
+                      <span className="cmd-desc">{cmd.desc}</span>
+                    </span>
+                    <span className="cmd-hint">{cmd.hint}</span>
+                  </button>
+                ))}
               </div>
             ))
           )}
         </div>
-      </dialog>
 
-      {/* toast 独立于 dialog:面板关闭后反馈仍然可见 */}
-      {toastMsg && (
-        <div
-          className="glass-card mono fixed bottom-16 left-1/2 z-[60] -translate-x-1/2 px-4 py-2 text-xs"
-          style={{ color: 'var(--accent)', maxWidth: '90vw' }}
-          role="status"
-        >
-          {toastMsg}
-        </div>
-      )}
-    </>
+      <div className="palette-toast" aria-live="polite">
+        {toastMsg}
+      </div>
+      </div>
+    </div>
   )
 }

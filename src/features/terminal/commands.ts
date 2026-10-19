@@ -7,28 +7,30 @@ export interface TerminalLine {
 export interface TerminalContext {
   user: string
   siteName: string
+  host: string
   keywords: string[]
-  now: { date: string; title: string } | null
-  usesNames: string[]
-  projects: Array<{ name: string; repo: string }>
-  /** 构建时间戳(__BUILD_TIME__ 注入) */
+  /** 构建时间戳(__BUILD_TIME__ 注入,ISO) */
   buildTime: string
   /** 建站日期 YYYY-MM-DD(运行天数由此计算) */
   siteStart: string
+  /** 当前强调色(设计稿 neofetch 的 Accent 行) */
+  accentLabel: string
+  accentHex: string
 }
 
 /**
- * `~` 键是否应打开终端(Review Focus 3):
- * 仅 ~ 键;input/textarea 聚焦、面板/终端已开(blocked)时不触发。
+ * `~`(或 `)键是否应打开终端(Review Focus 3):
+ * 仅 ~ 或 `;按住 Ctrl/Cmd/Alt 不触发;input/textarea 聚焦、
+ * 面板/终端已开(blocked)时不触发;target 未知时防御性不触发。
  * tagName 鸭子类型——避免引入 DOM 依赖,浏览器行为等价。
  */
 export function shouldOpenTerminal(
-  e: { key: string; target: unknown },
+  e: { key: string; target: unknown; ctrlKey?: boolean; metaKey?: boolean; altKey?: boolean },
   blocked: boolean,
 ): boolean {
-  if (e.key !== '~') return false
+  if (e.key !== '~' && e.key !== '`') return false
   if (blocked) return false
-  // target 未知(异常场景)时防御性不触发
+  if (e.ctrlKey || e.metaKey || e.altKey) return false
   const tag = (e.target as { tagName?: string } | null)?.tagName
   if (typeof tag !== 'string') return false
   return tag !== 'INPUT' && tag !== 'TEXTAREA'
@@ -36,97 +38,89 @@ export function shouldOpenTerminal(
 
 const HELP_LINES = [
   '可用命令:',
-  '  help              显示本帮助',
-  '  whoami            我是谁',
-  '  skills            技术栈',
-  '  projects          精选项目',
-  '  now               最近动态',
-  '  uses              装备清单',
-  '  fortune           来一条一言',
-  '  neofetch          站点信息',
-  '  clear             清屏',
-  '  sudo rm -rf /     试试看?',
+  '  help             显示本帮助',
+  '  whoami           我是谁',
+  '  skills           技术关键词表',
+  '  neofetch         系统信息',
+  '  clear            清屏',
+  '  sudo rm -rf /    试试就知道 :)',
 ]
 
 function daysSince(start: string): string {
   const ms = Date.now() - Date.parse(start)
-  if (!Number.isFinite(ms)) return '?'
-  return String(Math.floor(ms / 86_400_000))
+  if (!Number.isFinite(ms)) return 'N'
+  return String(Math.max(1, Math.ceil(ms / 86_400_000)))
 }
 
-/** 执行终端命令,返回输出行(fortune 返回占位行,真实内容由 UI 异步追加) */
+function pad(s: string, n: number): string {
+  let out = String(s)
+  while (out.length < n) out += ' '
+  return out
+}
+
+/** skills 两列 ASCII 表(设计稿规格) */
+function skillsAscii(keywords: string[]): string {
+  const rows: Array<[string, string]> = []
+  for (let i = 0; i < keywords.length; i += 2) {
+    rows.push([keywords[i], keywords[i + 1] ?? ''])
+  }
+  const W1 = 12
+  const W2 = 14
+  const bar = (l: string, m: string, r: string) =>
+    l + new Array(W1 + 1).join('─') + m + new Array(W2 + 1).join('─') + r
+  const out = [bar('┌', '┬', '┐')]
+  rows.forEach((r, i) => {
+    out.push(`│ ${pad(r[0], W1 - 1)}│ ${pad(r[1], W2 - 1)}│`)
+    if (i < rows.length - 1) out.push(bar('├', '┼', '┤'))
+  })
+  out.push(bar('└', '┴', '┘'))
+  return out.join('\n')
+}
+
+/** 执行终端命令。特殊信号:__CLEAR__ 清屏、__SHAKE__ 抖动(UI 层消费) */
 export function executeCommand(input: string, ctx: TerminalContext): TerminalLine[] {
   const cmd = input.trim().toLowerCase()
   if (!cmd) return []
 
+  const print = (text: string, kind: TerminalLine['kind'] = 'output'): TerminalLine => ({
+    kind,
+    text,
+  })
+
+  // sudo 变体:任意同时包含 sudo 与 rm 的输入
+  if (cmd.includes('sudo') && cmd.includes('rm')) {
+    return [
+      print('__SHAKE__'),
+      print('权限拒绝:这里是我的工位 :)', 'error'),
+    ]
+  }
+
   switch (cmd) {
     case 'help':
-      return HELP_LINES.map((text) => ({ kind: 'output' as const, text }))
+      return HELP_LINES.map((l) => print(l))
 
     case 'whoami':
-      return [
-        { kind: 'output', text: `${ctx.user} —— 把想法变成代码的人` },
-        { kind: 'output', text: `正在玩: ${ctx.keywords.join(' · ')}` },
-      ]
+      return [print(`${ctx.user} —— 把想法变成代码的人`)]
 
     case 'skills':
+      return [print(skillsAscii(ctx.keywords))]
+
+    case 'neofetch':
       return [
-        { kind: 'output', text: '┌─ 技术栈 ──────────────┐' },
-        ...ctx.keywords.map((k, i) => ({
-          kind: 'output' as const,
-          text: `│ ${String(i + 1).padStart(2)} · ${k.padEnd(12)}│`,
-        })),
-        { kind: 'output', text: '└───────────────────────┘' },
+        print(`${ctx.siteName}@${ctx.host}`),
+        print('─────────────────────────'),
+        print(`OS:      ${ctx.siteName} (Glass 2.0)`),
+        print(`Host:    前端开发者的数字工位`),
+        print(`Uptime:  ${daysSince(ctx.siteStart)} 天`),
+        print('Shell:   monologue-sh 1.0'),
+        print(`Build:   ${ctx.buildTime}`),
+        print(`Accent:  ${ctx.accentLabel} ${ctx.accentHex}`),
       ]
-
-    case 'projects':
-      return [
-        { kind: 'output', text: '精选项目:' },
-        ...ctx.projects.map((p) => ({
-          kind: 'output' as const,
-          text: `  ${p.name}  →  github.com/${p.repo}`,
-        })),
-      ]
-
-    case 'now':
-      return ctx.now
-        ? [{ kind: 'output', text: `[${ctx.now.date}] ${ctx.now.title}` }]
-        : [{ kind: 'output', text: '暂无近况' }]
-
-    case 'uses':
-      return [
-        { kind: 'output', text: '装备:' },
-        ...ctx.usesNames.map((n) => ({ kind: 'output' as const, text: `  ${n}` })),
-      ]
-
-    case 'fortune':
-      return [{ kind: 'output', text: '获取中...' }]
-
-    case 'neofetch': {
-      const days = daysSince(ctx.siteStart)
-      return [
-        { kind: 'output', text: `${ctx.siteName}@zhaozeyu.top` },
-        { kind: 'output', text: '─────────────────────' },
-        { kind: 'output', text: `OS:      呓语工位 (Glass 2.0)` },
-        { kind: 'output', text: `Host:    zhaozeyu.top` },
-        { kind: 'output', text: `Uptime:  ${days} 天` },
-        { kind: 'output', text: `Build:   ${ctx.buildTime}` },
-        { kind: 'output', text: `Stack:   ${ctx.keywords.join(', ')}` },
-      ]
-    }
 
     case 'clear':
-      return [{ kind: 'output', text: '__CLEAR__' }]
-
-    case 'sudo rm -rf /':
-      return [
-        { kind: 'error', text: '权限拒绝:这里是我的工位 :)' },
-        { kind: 'output', text: '(屏幕抖了一下)' },
-      ]
+      return [print('__CLEAR__')]
 
     default:
-      return [
-        { kind: 'error', text: `command not found: ${cmd},输入 help 查看可用命令` },
-      ]
+      return [print(`command not found: ${cmd},输入 help 查看可用命令`, 'error')]
   }
 }

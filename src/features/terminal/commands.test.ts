@@ -2,32 +2,64 @@ import { describe, expect, it } from 'vitest'
 import { executeCommand, shouldOpenTerminal, type TerminalContext } from './commands'
 
 const ctx: TerminalContext = {
-  user: 'zzy',
-  now: { date: '2026-10-19', title: '重构启动' },
-  usesNames: ['VS Code'],
-  projects: [{ name: '呓语工位', repo: 'zzy-cl/home-page-react' }],
-  buildTime: '2026-10-19T00:00:00.000Z',
-  siteStart: '2026-10-19',
-  keywords: ['React', 'Rust'],
+  user: 'zzy-cl',
   siteName: '呓语工位',
+  host: 'zhaozeyu.top',
+  keywords: ['Vue3', 'React', 'Rust', 'TypeScript', 'AI', 'Vibe Coding'],
+  buildTime: '2026-10-19T09:48:00.000Z',
+  siteStart: '2026-10-19',
+  accentLabel: '静谧蓝',
+  accentHex: '#7aa2ff',
 }
 
 /** 伪键盘事件(node 环境,无 DOM) */
 const kev = (target: { tagName?: string } | null) => ({ key: '~', target })
 
-describe('executeCommand', () => {
+describe('executeCommand(设计稿命令集:help/whoami/skills/neofetch/clear/sudo)', () => {
   it('help 列出全部命令', () => {
     const lines = executeCommand('help', ctx)
-    expect(lines.some((l) => l.text.includes('whoami'))).toBe(true)
+    const text = lines.map((l) => l.text).join('\n')
+    expect(text).toContain('whoami')
+    expect(text).toContain('skills')
+    expect(text).toContain('neofetch')
+    expect(text).toContain('sudo')
   })
 
-  it('whoami 含用户名', () => {
-    expect(executeCommand('whoami', ctx).some((l) => l.text.includes('zzy'))).toBe(true)
+  it('whoami 含用户名与身份句', () => {
+    const text = executeCommand('whoami', ctx)
+      .map((l) => l.text)
+      .join('\n')
+    expect(text).toContain('zzy-cl')
+    expect(text).toContain('把想法变成代码的人')
   })
 
-  it('sudo rm -rf / 返回彩蛋文案', () => {
+  it('skills 输出两列 ASCII 表(含边框与关键词)', () => {
+    const lines = executeCommand('skills', ctx)
+    const text = lines.map((l) => l.text).join('\n')
+    expect(text).toContain('┌')
+    expect(text).toContain('Vue3')
+    expect(text).toContain('Vibe Coding')
+  })
+
+  it('neofetch 含 OS/Host/Uptime/Shell/Build/Accent 行', () => {
+    const text = executeCommand('neofetch', ctx)
+      .map((l) => l.text)
+      .join('\n')
+    expect(text).toContain('呓语工位@zhaozeyu.top')
+    expect(text).toContain('Uptime:')
+    expect(text).toContain('Shell:   monologue-sh 1.0')
+    expect(text).toContain('Build:')
+    expect(text).toContain('静谧蓝 #7aa2ff')
+  })
+
+  it('sudo rm -rf / 触发 shake 信号与彩蛋文案', () => {
     const lines = executeCommand('sudo rm -rf /', ctx)
-    expect(lines[0].text).toContain('权限拒绝')
+    expect(lines.some((l) => l.text === '__SHAKE__')).toBe(true)
+    expect(lines.some((l) => l.text.includes('权限拒绝'))).toBe(true)
+  })
+
+  it('clear 输出清屏信号', () => {
+    expect(executeCommand('clear', ctx).some((l) => l.text === '__CLEAR__')).toBe(true)
   })
 
   it('未知命令报 command not found', () => {
@@ -42,32 +74,19 @@ describe('executeCommand', () => {
     expect(executeCommand('HELP', ctx).length).toBeGreaterThan(0)
   })
 
-  it('projects 列出仓库名', () => {
-    const lines = executeCommand('projects', ctx)
-    expect(lines.some((l) => l.text.includes('zzy-cl/home-page-react'))).toBe(true)
-  })
-
-  it('now 输出最近条目标题', () => {
-    const lines = executeCommand('now', ctx)
-    expect(lines.some((l) => l.text.includes('重构启动'))).toBe(true)
-  })
-
-  it('now 无数据时输出占位', () => {
-    const lines = executeCommand('now', { ...ctx, now: null })
-    expect(lines.some((l) => l.text.includes('暂无'))).toBe(true)
-  })
-
-  it('neofetch 含站点名与运行天数', () => {
-    const lines = executeCommand('neofetch', ctx)
-    const text = lines.map((l) => l.text).join('\n')
-    expect(text).toContain('呓语工位')
-    expect(text).toContain('天')
+  it('sudo 变体(任意含 sudo 与 rm 的输入)同样触发彩蛋', () => {
+    const lines = executeCommand('sudo rm -rf /*', ctx)
+    expect(lines.some((l) => l.text.includes('权限拒绝'))).toBe(true)
   })
 })
 
 describe('shouldOpenTerminal', () => {
   it('普通目标且未阻塞时打开', () => {
     expect(shouldOpenTerminal(kev({ tagName: 'DIV' }), false)).toBe(true)
+  })
+
+  it('~ 与 ` 均可触发', () => {
+    expect(shouldOpenTerminal({ key: '`', target: { tagName: 'DIV' } }, false)).toBe(true)
   })
 
   it('input/textarea 聚焦时不打开', () => {
@@ -77,6 +96,15 @@ describe('shouldOpenTerminal', () => {
 
   it('已阻塞时不打开', () => {
     expect(shouldOpenTerminal(kev({ tagName: 'DIV' }), true)).toBe(false)
+  })
+
+  it('按住修饰键不触发(避免与系统快捷键冲突)', () => {
+    expect(
+      shouldOpenTerminal({ key: '~', target: { tagName: 'DIV' }, ctrlKey: true }, false),
+    ).toBe(false)
+    expect(
+      shouldOpenTerminal({ key: '~', target: { tagName: 'DIV' }, metaKey: true }, false),
+    ).toBe(false)
   })
 
   it('非 ~ 键不打开', () => {

@@ -1,65 +1,73 @@
 import { Github } from 'lucide-react'
 import { site } from '@/content/site'
+import { toHeatmapLevels } from './api'
 import type { ContributionYear } from './api'
 
-/** level → 格子背景透明度(level 0 用玻璃底) */
-function levelColor(level: number): string {
-  if (level <= 0) return 'var(--glass-bg)'
-  return `rgba(122, 162, 255, ${level * 0.22 + 0.12})`
-}
-
 /**
- * GitHub 贡献热力图:53 列 × 7 行,固定 11px 格子在卡片内居中。
- * data 为 null / 空 → 灰色占位格(降级契约,Review Focus 1)。
+ * GitHub 热力图(设计稿视觉):
+ * 53 列 × 7 行固定 11px 格子、l1-l4 accent 色阶、future 近透明格、少→多图例。
+ * data 为 null → 全灰占位(降级契约,Review Focus 1)。
  */
 export default function Heatmap({ data }: { data: ContributionYear | null }) {
-  return (
-    <div className="flex h-full flex-col justify-between">
-      <div className="flex items-baseline justify-between">
-        <span className="mono" style={{ color: 'var(--text-0)' }}>
-          <span className="text-2xl font-bold">{(data?.total ?? 0).toLocaleString()}</span>{' '}
-          <span className="text-xs" style={{ color: 'var(--text-1)' }}>
-            次贡献 / 年
-          </span>
-        </span>
-        <span className="mono text-[10px]" style={{ color: 'var(--text-2)' }}>
-          github.com/{site.githubUser}
-        </span>
-      </div>
+  const total = data?.total ?? 0
 
-      {/* 53 列固定 11px 格子,横向居中;md 窄卡时允许滚动兜底(滚动条隐藏) */}
-      <div
-        className="flex justify-center overflow-x-auto py-2"
-        style={{ scrollbarWidth: 'none' }}
-      >
+  // todayIndex:窗口最后一天的下标(其余为 future 近透明)
+  const days = data?.days ?? Array.from({ length: 53 * 7 }, () => ({ date: '', count: 0, level: 0 as const }))
+  const lastReal = days.reduce((acc, d, i) => (d.date ? i : acc), -1)
+  const levels = toHeatmapLevels(days, lastReal)
+
+  return (
+    <>
+      <header className="hm-head">
+        <div className="hm-stat">
+          <span className="card-kicker">GITHUB</span>
+          <p className="hm-total">
+            <strong className="hm-num mono">{total.toLocaleString()}</strong>
+            <span className="hm-unit">次贡献 / 年</span>
+          </p>
+        </div>
+        <a className="hm-id mono" href={site.github} target="_blank" rel="noopener noreferrer">
+          github.com/{site.githubUser}
+        </a>
+      </header>
+
+      <div className="hm-scroll">
         <div
-          className="grid grid-flow-col gap-[3px]"
-          style={{ gridTemplateRows: 'repeat(7, 11px)', gridAutoColumns: '11px' }}
+          className="hm-grid"
+          role="img"
+          aria-label={`过去一年的 GitHub 贡献热力图,共 ${total} 次贡献`}
         >
-          {(data?.days.length ? data.days : Array.from({ length: 53 * 7 })).map((d, i) => {
-            const day = d as ContributionYear['days'][number] | undefined
+          {days.map((d, i) => {
+            const lv = levels[i]
+            const cls =
+              lv === -1 ? 'hm-cell future' : lv > 0 ? `hm-cell l${lv}` : 'hm-cell'
             return (
-              <div
-                key={day?.date ?? i}
-                className="rounded-[2px]"
-                style={{ background: day ? levelColor(day.level) : 'var(--glass-bg)' }}
-                title={day ? `${day.date} · ${day.count} 次` : undefined}
+              <i
+                key={d.date || `pad-${i}`}
+                className={cls}
+                title={d.date ? (d.count === 0 ? `${d.date} · 无贡献` : `${d.date} · ${d.count} 次贡献`) : undefined}
+                aria-hidden="true"
               />
             )
           })}
         </div>
       </div>
 
-      <a
-        href={`https://github.com/${site.githubUser}`}
-        target="_blank"
-        rel="noopener noreferrer"
-        className="mono flex items-center gap-1.5 text-xs"
-        style={{ color: 'var(--text-1)' }}
-      >
-        <Github size={13} />
-        在 GitHub 上查看完整活跃记录
-      </a>
-    </div>
+      <footer className="hm-foot">
+        <a className="link-accent mono" href={site.github} target="_blank" rel="noopener noreferrer">
+          <Github size={12} style={{ verticalAlign: '-2px', marginRight: 4 }} />
+          在 GitHub 上查看完整活跃记录
+        </a>
+        <span className="hm-legend" aria-hidden="true">
+          <span className="mono">少</span>
+          <i className="hm-cell" />
+          <i className="hm-cell l1" />
+          <i className="hm-cell l2" />
+          <i className="hm-cell l3" />
+          <i className="hm-cell l4" />
+          <span className="mono">多</span>
+        </span>
+      </footer>
+    </>
   )
 }

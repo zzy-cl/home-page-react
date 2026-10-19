@@ -74,6 +74,26 @@ export async function fetchContributions(user: string): Promise<ContributionYear
   }
 }
 
+/**
+ * days → 设计稿渲染数据(levels 数组):
+ * 占位格与零贡献 → 0;count 按 GitHub 官方阈值映射 1-4;
+ * today 之后的尾位(周末对齐余格)→ -1(future,渲染为近透明)。
+ * 阈值:1-2 → 1,3-5 → 2,6-9 → 3,10+ → 4
+ */
+export function toHeatmapLevels(
+  days: ContributionDay[],
+  todayIndex: number,
+): Array<-1 | 0 | 1 | 2 | 3 | 4> {
+  return days.map((d, i) => {
+    if (i > todayIndex) return -1
+    if (!d.date || d.count <= 0) return 0
+    if (d.count <= 2) return 1
+    if (d.count <= 5) return 2
+    if (d.count <= 9) return 3
+    return 4
+  })
+}
+
 /** 拉取单仓库 star 数(官方 REST,无认证);失败返回 null */
 export async function fetchRepoStars(repo: string): Promise<number | null> {
   try {

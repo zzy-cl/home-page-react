@@ -1,99 +1,83 @@
 import { useEffect, useRef, useState } from 'react'
 import { site } from '@/content/site'
-import { useSections } from '@/content/uses'
-import { loadNowEntries } from '@/lib/md'
-import { projects } from '@/content/projects.data'
-import { fetchHitokoto } from '@/features/hitokoto/api'
+import { ACCENTS } from '@/lib/accent'
 import { useUiStore } from '@/store/ui'
 import { executeCommand, type TerminalContext, type TerminalLine } from './commands'
 
-/** 站点快照(渲染期取一次即可,均为构建期常量) */
-function buildContext(): TerminalContext {
-  const latest = loadNowEntries()[0]
-  return {
-    user: site.githubUser,
-    siteName: site.name,
-    keywords: [...site.keywords],
-    now: latest ? { date: latest.date, title: latest.title } : null,
-    usesNames: useSections.flatMap((s) => s.items.map((i) => i.name)),
-    projects: projects.map((p) => ({ name: p.name, repo: p.repo })),
-    buildTime: __BUILD_TIME__,
-    siteStart: '2026-10-19',
-  }
-}
-
+/**
+ * 终端模式(设计稿 .md-terminal):视口居中、CSS shake、
+ * term-line 结构(prompt/ok/err)、↑ 历史带草稿保留、Esc/遮罩关闭。
+ */
 export default function Terminal() {
   const { terminalOpen, setTerminalOpen } = useUiStore()
-  const [lines, setLines] = useState<TerminalLine[]>([
-    { kind: 'output', text: `${site.name} 伪终端 v1.0 — 输入 help 查看命令` },
-  ])
+  const [lines, setLines] = useState<TerminalLine[]>([])
   const [input, setInput] = useState('')
+  const [shake, setShake] = useState(false)
   const [history, setHistory] = useState<string[]>([])
   const historyIdx = useRef(-1)
+  const draft = useRef('')
   const inputRef = useRef<HTMLInputElement>(null)
-  const scrollRef = useRef<HTMLDivElement>(null)
+  const bodyRef = useRef<HTMLDivElement>(null)
   const ctxRef = useRef<TerminalContext | null>(null)
 
-  // 打开时聚焦并滚到底
   useEffect(() => {
+    if (terminalOpen && !ctxRef.current) {
+      const accentKey = (document.documentElement.getAttribute('data-accent') ?? 'blue') as
+        | keyof typeof ACCENTS
+        | string
+      const conf = ACCENTS[accentKey as keyof typeof ACCENTS] ?? ACCENTS.blue
+      ctxRef.current = {
+        user: site.githubUser,
+        siteName: site.name,
+        host: 'zhaozeyu.top',
+        keywords: [...site.keywords],
+        buildTime: __BUILD_TIME__,
+        siteStart: '2026-10-19',
+        accentLabel: conf.label,
+        accentHex: conf.hex,
+      }
+    }
     if (terminalOpen) {
-      if (!ctxRef.current) ctxRef.current = buildContext()
-      inputRef.current?.focus()
+      try {
+        inputRef.current?.focus({ preventScroll: true })
+      } catch {
+        inputRef.current?.focus()
+      }
     }
   }, [terminalOpen])
 
   useEffect(() => {
-    scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight })
+    bodyRef.current?.scrollTo({ top: bodyRef.current.scrollHeight })
   }, [lines])
 
   if (!terminalOpen) return null
 
   const run = (raw: string) => {
-    const out = executeCommand(raw, ctxRef.current!)
-    const inputLine: TerminalLine = { kind: 'input', text: raw.trim() }
-    let next = [...lines, inputLine]
+    const ctx = ctxRef.current!
+    const echo: TerminalLine = { kind: 'input', text: raw.trim() }
+    const out = executeCommand(raw, ctx)
 
-    // clear 命令:清空历史输出
     if (out.some((l) => l.text === '__CLEAR__')) {
-      next = []
-      setLines(next)
+      setLines([])
       setInput('')
       return
     }
-    next = [...next, ...out]
 
-    // fortune:异步取真实一言,追加输出
-    if (raw.trim().toLowerCase() === 'fortune') {
-      void fetchHitokoto().then((h) => {
-        setLines((cur) => [
-          ...cur,
-          h
-            ? { kind: 'output', text: `${h.text} —— ${h.from}` }
-            : { kind: 'error', text: '一言获取失败' },
-        ])
-      })
-    }
-
-    // sudo 彩蛋:屏幕轻抖(仅 transform,红线内)
-    if (raw.trim().toLowerCase() === 'sudo rm -rf /') {
-      const el = document.getElementById('terminal-window')
-      if (el) {
-        el.animate(
-          [
-            { transform: 'translateX(0)' },
-            { transform: 'translateX(-4px)' },
-            { transform: 'translateX(4px)' },
-            { transform: 'translateX(0)' },
-          ],
-          { duration: 200 },
-        )
-      }
-    }
-
-    setLines(next)
+    const shakeIt = out.some((l) => l.text === '__SHAKE__')
+    const filtered = out.filter((l) => l.text !== '__SHAKE__' && l.text !== '__CLEAR__')
+    setLines((cur) => [...cur, echo, ...filtered])
     setInput('')
-    if (raw.trim()) setHistory((h) => [raw.trim(), ...h])
-    historyIdx.current = -1
+
+    if (raw.trim()) {
+      setHistory((h) => [raw.trim(), ...h])
+      historyIdx.current = -1
+      draft.current = ''
+    }
+
+    if (shakeIt) {
+      setShake(true)
+      setTimeout(() => setShake(false), 220)
+    }
   }
 
   const onKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
@@ -101,59 +85,65 @@ export default function Terminal() {
       run(input)
     } else if (e.key === 'ArrowUp') {
       e.preventDefault()
-      const next = Math.min(historyIdx.current + 1, history.length - 1)
-      if (next >= 0) {
-        historyIdx.current = next
-        setInput(history[next])
-      }
+      if (!history.length) return
+      // 回溯时保留未提交草稿(设计稿 TERM_DRAFT)
+      if (historyIdx.current === -1) draft.current = input
+      const next = historyIdx.current === -1 ? history.length - 1 : Math.max(0, historyIdx.current - 1)
+      historyIdx.current = next
+      setInput(history[next])
     } else if (e.key === 'ArrowDown') {
       e.preventDefault()
-      const next = historyIdx.current - 1
-      historyIdx.current = next
-      setInput(next >= 0 ? history[next] : '')
+      if (historyIdx.current === -1) return
+      historyIdx.current += 1
+      if (historyIdx.current >= history.length) {
+        historyIdx.current = -1
+        setInput(draft.current)
+      } else {
+        setInput(history[historyIdx.current])
+      }
     } else if (e.key === 'Escape') {
+      e.preventDefault()
       setTerminalOpen(false)
     }
   }
 
-  const colorOf = (kind: TerminalLine['kind']) =>
-    kind === 'error' ? '#ff6b6b' : kind === 'input' ? 'var(--accent)' : 'var(--text-1)'
-
   return (
     <div
-      className="fixed inset-0 z-50 flex items-start justify-center"
-      style={{ background: 'rgba(0,0,0,0.8)', backdropFilter: 'blur(8px)' }}
-      onClick={() => setTerminalOpen(false)}
+      className="md-overlay md-terminal-overlay"
+      onMouseDown={(e) => {
+        if (e.target === e.currentTarget) setTerminalOpen(false)
+      }}
     >
-      <div
-        id="terminal-window"
-        className="glass-card mono mt-[10vh] w-[min(720px,92vw)] p-6 text-sm"
-        onClick={(e) => e.stopPropagation()}
-      >
-        <div ref={scrollRef} className="max-h-[60vh] min-h-[300px] overflow-y-auto">
+      <div className={`md-terminal${shake ? ' shake' : ''}`} role="dialog" aria-modal="true" aria-label="终端模式">
+        <div className="term-body" ref={bodyRef} aria-live="polite">
           {lines.map((l, i) => (
-            <div key={i} className="whitespace-pre-wrap" style={{ color: colorOf(l.kind) }}>
-              {l.kind === 'input' ? `$ ${l.text}` : l.text}
+            <div key={i} className={`term-line${l.kind === 'error' ? ' err' : l.kind === 'input' ? ' input' : ' ok'}`}>
+              {l.kind === 'input' ? (
+                <>
+                  <span className="prompt">$ </span>
+                  {l.text}
+                </>
+              ) : (
+                l.text
+              )}
             </div>
           ))}
         </div>
-        <div className="mt-2 flex items-center gap-2" style={{ color: 'var(--accent)' }}>
-          <span>$</span>
+        <div className="term-input-row">
+          <span className="prompt" aria-hidden="true">
+            $
+          </span>
           <input
             ref={inputRef}
             value={input}
             onChange={(e) => setInput(e.target.value)}
             onKeyDown={onKeyDown}
-            className="mono w-full bg-transparent outline-none"
-            style={{ color: 'var(--text-0)' }}
             autoComplete="off"
             spellCheck={false}
-            aria-label="终端输入"
+            aria-label="终端命令输入"
           />
         </div>
-        <div className="mt-3 text-[10px]" style={{ color: 'var(--text-2)' }}>
-          Esc 关闭 · ↑ 回溯历史
-        </div>
+        <div className="term-hint">Esc 关闭 · ↑ 回溯历史</div>
       </div>
     </div>
   )

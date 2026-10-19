@@ -1,14 +1,23 @@
 import { Link } from '@tanstack/react-router'
+import { Star } from 'lucide-react'
 import BentoCard, { BentoGrid } from '@/components/BentoCard'
 import Kbd from '@/components/Kbd'
 import { site } from '@/content/site'
+import { projects } from '@/content/projects.data'
 import { useSections } from '@/content/uses'
+import Heatmap from '@/features/github/Heatmap'
+import { useContributions, useRepoStars } from '@/features/github/hooks'
+import HitokotoCard from '@/features/hitokoto/HitokotoCard'
 import { loadNowEntries } from '@/lib/md'
 
 function Home() {
   // 构建期已收集的 /now 条目(按日期倒序),首条作为摘要卡数据
   const nowEntries = loadNowEntries()
   const latest = nowEntries[0]
+  // GitHub 数据(失败时为 null,卡片内降级)
+  const { data: contributions } = useContributions()
+  const { data: stars } = useRepoStars()
+  const starsByRepo = new Map((stars ?? []).map((s) => [s.repo, s.stars]))
 
   const nowSummary = latest
     ? latest.body.length > 60
@@ -43,9 +52,9 @@ function Home() {
         </div>
       </BentoCard>
 
-      {/* GitHub 热力图: col-span-3(Task 8 接数据) */}
+      {/* GitHub 热力图: col-span-3 */}
       <BentoCard title="GITHUB" className="lg:col-span-3">
-        <div className="h-14 rounded-[var(--radius-inner)]" style={{ background: 'var(--glass-bg)' }} />
+        <Heatmap data={contributions ?? null} />
       </BentoCard>
 
       {/* /now 摘要: col-span-2 */}
@@ -66,9 +75,33 @@ function Home() {
         )}
       </BentoCard>
 
-      {/* 精选项目: col-span-6(Task 8 接 star) */}
+      {/* 精选项目: col-span-6 */}
       <BentoCard title="PROJECTS" className="lg:col-span-6">
-        <div className="h-20 rounded-[var(--radius-inner)]" style={{ background: 'var(--glass-bg)' }} />
+        <ul className="space-y-3">
+          {projects.map((p) => (
+            <li key={p.repo}>
+              <a
+                href={`https://github.com/${p.repo}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex items-baseline justify-between gap-3"
+              >
+                <span className="min-w-0">
+                  <span className="mono text-sm" style={{ color: 'var(--text-0)' }}>
+                    {p.name}
+                  </span>
+                  <span className="ml-3 hidden text-xs sm:inline" style={{ color: 'var(--text-1)' }}>
+                    {p.desc}
+                  </span>
+                </span>
+                <span className="mono flex shrink-0 items-center gap-1 text-xs" style={{ color: 'var(--text-1)' }}>
+                  <Star size={12} style={{ color: 'var(--accent)' }} />
+                  {starsByRepo.get(p.repo) ?? '--'}
+                </span>
+              </a>
+            </li>
+          ))}
+        </ul>
       </BentoCard>
 
       {/* /uses 摘要: col-span-2 */}
@@ -93,11 +126,9 @@ function Home() {
         )}
       </BentoCard>
 
-      {/* 一言: col-span-2(Task 8 接数据) */}
+      {/* 一言: col-span-2 */}
       <BentoCard title="一言" className="lg:col-span-2">
-        <p className="text-sm" style={{ color: 'var(--text-2)' }}>
-          保持热爱,保持构建
-        </p>
+        <HitokotoCard />
       </BentoCard>
 
       {/* Cmd+K 提示: col-span-2(Task 9 接 openCommand) */}

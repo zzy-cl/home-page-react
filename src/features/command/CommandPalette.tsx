@@ -1,19 +1,19 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
-import { useNavigate } from '@tanstack/react-router'
-import type { UseNavigateResult } from '@tanstack/react-router'
-import { site } from '@/content/site'
-import { applyAccent, nextAccentKey } from '@/lib/accent'
-import { filterCommands } from './registry'
-import type { Command } from './registry'
-import { useUiStore } from '@/store/ui'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useNavigate } from '@tanstack/react-router';
+import type { UseNavigateResult } from '@tanstack/react-router';
+import { site } from '@/content/site';
+import { applyAccent, nextAccentKey } from '@/lib/accent';
+import { filterCommands } from './registry';
+import type { Command } from './registry';
+import { useUiStore } from '@/store/ui';
 
-const PALETTE_HINT = '↑↓ 选择 · Enter 执行 · Esc 关闭'
+const PALETTE_HINT = '↑↓ 选择 · Enter 执行 · Esc 关闭';
 
 interface UiCommand extends Command {
-  desc: string
-  hint: string
+  desc: string;
+  hint: string;
   /** 执行后面板保持打开(设计稿:主题切换需要看到 toast 反馈) */
-  keepOpen?: boolean
+  keepOpen?: boolean;
 }
 
 function buildCommands(
@@ -66,10 +66,10 @@ function buildCommands(
       section: '主题',
       keepOpen: true,
       action: () => {
-        const current = document.documentElement.getAttribute('data-accent') ?? 'blue'
-        const next = nextAccentKey(current)
-        const msg = applyAccent(next, true)
-        if (msg) toast(msg)
+        const current = document.documentElement.getAttribute('data-accent') ?? 'blue';
+        const next = nextAccentKey(current);
+        const msg = applyAccent(next, true);
+        if (msg) toast(msg);
       },
     },
     {
@@ -92,11 +92,11 @@ function buildCommands(
         // 面板内 toast 反馈;一言卡在首页,若不在首页则先回去
         void import('@/features/hitokoto/api').then(({ fetchHitokoto }) =>
           fetchHitokoto().then((h) => toast(h ? `${h.text} —— ${h.from}` : '一言获取失败')),
-        )
-        if (window.location.pathname !== '/') void navigate({ to: '/' })
+        );
+        if (window.location.pathname !== '/') void navigate({ to: '/' });
       },
     },
-  ]
+  ];
   // email 可选:site.email 未配置则不出现该命令
   if (site.email) {
     cmds.splice(4, 0, {
@@ -107,113 +107,110 @@ function buildCommands(
       keywords: ['email', '邮件', '联系'],
       section: '链接',
       action: () => window.open(`mailto:${site.email}`, '_self'),
-    })
+    });
   }
-  return cmds
+  return cmds;
 }
 
 export default function CommandPalette() {
-  const navigate = useNavigate()
-  const { commandOpen, setCommandOpen } = useUiStore()
-  const inputRef = useRef<HTMLInputElement>(null)
-  const lastFocus = useRef<HTMLElement | null>(null)
-  const toastTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const navigate = useNavigate();
+  const setCommandOpen = useUiStore((s) => s.setCommandOpen);
+  const inputRef = useRef<HTMLInputElement>(null);
+  const lastFocus = useRef<HTMLElement | null>(null);
 
-  const [query, setQuery] = useState('')
-  const [active, setActive] = useState(0)
-  const [toastMsg, setToastMsg] = useState<string>(PALETTE_HINT)
+  const [query, setQuery] = useState('');
+  const [active, setActive] = useState(0);
+  const [toastMsg, setToastMsg] = useState<string>(PALETTE_HINT);
 
-  // 面板内 toast 行:默认显示键位提示,命令反馈 2.6s 后回落(设计稿 palToast)
-  const toast = useCallback((msg: string) => {
-    setToastMsg(msg)
-    if (toastTimer.current) clearTimeout(toastTimer.current)
-    toastTimer.current = setTimeout(() => setToastMsg(PALETTE_HINT), 2600)
-  }, [])
+  // 面板内 toast 行:默认显示键位提示,命令反馈 2.6s 后回落(设计稿 palToast)。
+  // 定时回落由 effect 承担:连续 toast 经 cleanup 重置计时,卸载自动清理,
+  // toast 本身不含 ref(useMemo 中构建命令时传递才不会被视为渲染期读 ref)。
+  const toast = useCallback((msg: string) => setToastMsg(msg), []);
 
-  const commands = useMemo(() => buildCommands(navigate, toast), [navigate, toast])
+  useEffect(() => {
+    if (toastMsg === PALETTE_HINT) return;
+    const timer = setTimeout(() => setToastMsg(PALETTE_HINT), 2600);
+    return () => clearTimeout(timer);
+  }, [toastMsg]);
+
+  const commands = useMemo(() => buildCommands(navigate, toast), [navigate, toast]);
   const filtered = useMemo(
     () => filterCommands(commands as Command[], query) as UiCommand[],
     [commands, query],
-  )
+  );
 
-  // 打开/关闭同步:输入重置、焦点进入与恢复(设计稿 openPalette/closeOverlay)
+  // 打开/关闭即挂载/卸载(App 仅在 commandOpen 时渲染本组件):
+  // 挂载记录焦点并聚焦输入,卸载恢复打开前焦点(设计稿 openPalette/closeOverlay)。
+  // 输入/选中/提示在每次挂载时天然重置,无需 effect 内同步 setState。
   useEffect(() => {
-    if (commandOpen) {
-      lastFocus.current = document.activeElement as HTMLElement | null
-      setQuery('')
-      setActive(0)
-      setToastMsg(PALETTE_HINT)
-      try {
-        inputRef.current?.focus({ preventScroll: true })
-      } catch {
-        inputRef.current?.focus()
-      }
-    } else if (lastFocus.current) {
-      try {
-        lastFocus.current.focus({ preventScroll: true })
-      } catch {
-        lastFocus.current.focus()
-      }
-      lastFocus.current = null
+    lastFocus.current = document.activeElement as HTMLElement | null;
+    try {
+      inputRef.current?.focus({ preventScroll: true });
+    } catch {
+      inputRef.current?.focus();
     }
-  }, [commandOpen])
+    return () => {
+      const el = lastFocus.current;
+      if (el) {
+        try {
+          el.focus({ preventScroll: true });
+        } catch {
+          el.focus();
+        }
+      }
+    };
+  }, []);
 
-  useEffect(
-    () => () => {
-      if (toastTimer.current) clearTimeout(toastTimer.current)
-    },
-    [],
-  )
-
+  // 执行命令。keepOpen 命令(如主题切换)的"焦点还给输入框"由事件回调
+  // 在调用后内联完成——ref 只允许在事件/副作用中直接读取(react-hooks/refs)
   const execute = useCallback(
     (cmd: UiCommand | undefined) => {
-      if (!cmd) return
-      if (!cmd.keepOpen) setCommandOpen(false)
+      if (!cmd) return;
+      if (!cmd.keepOpen) setCommandOpen(false);
       else {
-        setQuery('')
-        setActive(0)
+        setQuery('');
+        setActive(0);
       }
-      cmd.action()
-      if (cmd.keepOpen) inputRef.current?.focus()
+      cmd.action();
     },
     [setCommandOpen],
-  )
+  );
 
   const onKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === 'ArrowDown') {
-      e.preventDefault()
-      setActive((i) => (filtered.length ? (i + 1) % filtered.length : 0))
+      e.preventDefault();
+      setActive((i) => (filtered.length ? (i + 1) % filtered.length : 0));
     } else if (e.key === 'ArrowUp') {
-      e.preventDefault()
-      setActive((i) => (filtered.length ? (i - 1 + filtered.length) % filtered.length : 0))
+      e.preventDefault();
+      setActive((i) => (filtered.length ? (i - 1 + filtered.length) % filtered.length : 0));
     } else if (e.key === 'Enter') {
-      e.preventDefault()
-      execute(filtered[active])
+      e.preventDefault();
+      const cmd = filtered[active];
+      execute(cmd);
+      if (cmd?.keepOpen) inputRef.current?.focus();
     } else if (e.key === 'Escape') {
-      e.preventDefault()
-      setCommandOpen(false)
+      e.preventDefault();
+      setCommandOpen(false);
     }
-  }
+  };
 
   // 按 section 分组;顺带记录全局索引供高亮
   const sections = useMemo(() => {
-    const map = new Map<string, Array<{ cmd: UiCommand; idx: number }>>()
+    const map = new Map<string, Array<{ cmd: UiCommand; idx: number }>>();
     filtered.forEach((cmd, idx) => {
-      const list = map.get(cmd.section) ?? []
-      list.push({ cmd, idx })
-      map.set(cmd.section, list)
-    })
-    return [...map.entries()]
-  }, [filtered])
-
-  if (!commandOpen) return null
+      const list = map.get(cmd.section) ?? [];
+      list.push({ cmd, idx });
+      map.set(cmd.section, list);
+    });
+    return [...map.entries()];
+  }, [filtered]);
 
   return (
     <div
       className="md-overlay"
       onMouseDown={(e) => {
         // 点击遮罩关闭
-        if (e.target === e.currentTarget) setCommandOpen(false)
+        if (e.target === e.currentTarget) setCommandOpen(false);
       }}
     >
       <div className="md-palette" role="dialog" aria-modal="true" aria-label="全站指令面板">
@@ -225,8 +222,8 @@ export default function CommandPalette() {
             ref={inputRef}
             value={query}
             onChange={(e) => {
-              setQuery(e.target.value)
-              setActive(0)
+              setQuery(e.target.value);
+              setActive(0);
             }}
             onKeyDown={onKeyDown}
             placeholder="输入命令或搜索…"
@@ -265,10 +262,10 @@ export default function CommandPalette() {
           )}
         </div>
 
-      <div className="palette-toast" aria-live="polite">
-        {toastMsg}
-      </div>
+        <div className="palette-toast" aria-live="polite">
+          {toastMsg}
+        </div>
       </div>
     </div>
-  )
+  );
 }

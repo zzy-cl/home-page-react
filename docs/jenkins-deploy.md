@@ -24,13 +24,13 @@ git push（master）
 
 ## 配置文件与可调参数
 
-| 文件 | 作用 | 可自定义项 |
-|---|---|---|
-| `Dockerfile` | 两阶段：node:24-alpine 构建、nginx:alpine 托管 | node 版本；npm 源；产物路径（默认 dist） |
-| `nginx.conf` | SPA 路由 + gzip_static | root 路径（须与 Dockerfile 的 COPY 目标同步修改） |
-| `deploy/docker-compose.yml` | 运行编排 | 宿主端口（区间 5081-5099 内挑；改后同步宿主 nginx 的 proxy_pass） |
-| `Jenkinsfile` | 流水线定义 | 镜像名/备份 tag；部署命令 |
-| `.dockerignore` | 构建上下文裁剪 | 新增无需进镜像的大目录时补充 |
+| 文件                        | 作用                                           | 可自定义项                                                        |
+| --------------------------- | ---------------------------------------------- | ----------------------------------------------------------------- |
+| `Dockerfile`                | 两阶段：node:24-alpine 构建、nginx:alpine 托管 | node 版本；npm 源；产物路径（默认 dist）                          |
+| `nginx.conf`                | SPA 路由 + gzip_static                         | root 路径（须与 Dockerfile 的 COPY 目标同步修改）                 |
+| `deploy/docker-compose.yml` | 运行编排                                       | 宿主端口（区间 5081-5099 内挑；改后同步宿主 nginx 的 proxy_pass） |
+| `Jenkinsfile`               | 流水线定义                                     | 镜像名/备份 tag；部署命令                                         |
+| `.dockerignore`             | 构建上下文裁剪                                 | 新增无需进镜像的大目录时补充                                      |
 
 两条同步规则（只改一半必出问题）：
 

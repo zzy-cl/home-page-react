@@ -1,12 +1,12 @@
-import { Link } from '@tanstack/react-router'
-import { useUiStore } from '@/store/ui'
-import { site } from '@/content/site'
-import { loadNowEntries } from '@/lib/md'
+import { Link } from '@tanstack/react-router';
+import { useUiStore } from '@/store/ui';
+import { site } from '@/content/site';
+import { loadNowEntries } from '@/lib/md';
 
 /** /now(设计稿 now.html):返回头 + 页头 + 倒序条目卡 + 空状态 */
 function Now() {
-  const openPalette = () => useUiStore.getState().setCommandOpen(true)
-  const entries = loadNowEntries()
+  const openPalette = () => useUiStore.getState().setCommandOpen(true);
+  const entries = loadNowEntries();
 
   return (
     <main className="page page-doc">
@@ -14,7 +14,12 @@ function Now() {
         <Link className="back-link mono" to="/">
           ← {site.name}
         </Link>
-        <button className="kbd-hint kbd-hint--sm" type="button" onClick={openPalette} aria-label="打开全站指令面板(Ctrl+K)">
+        <button
+          className="kbd-hint kbd-hint--sm"
+          type="button"
+          onClick={openPalette}
+          aria-label="打开全站指令面板(Ctrl+K)"
+        >
           <kbd>Ctrl</kbd>
           <kbd>K</kbd>
         </button>
@@ -33,7 +38,11 @@ function Now() {
           </section>
         ) : (
           entries.map((entry, i) => (
-            <article key={`${entry.date}-${i}`} className="card card--doc entry" style={{ '--i': i } as React.CSSProperties}>
+            <article
+              key={`${entry.date}-${i}`}
+              className="card card--doc entry"
+              style={{ '--i': i } as React.CSSProperties}
+            >
               <time className="entry-date mono" dateTime={entry.date || undefined}>
                 {entry.date}
               </time>
@@ -51,7 +60,7 @@ function Now() {
         )}
       </div>
     </main>
-  )
+  );
 }
 
-export default Now
+export default Now;

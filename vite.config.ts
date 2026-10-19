@@ -1,19 +1,14 @@
-import react, { reactCompilerPreset } from '@vitejs/plugin-react'
-import babel from '@rolldown/plugin-babel'
-import tailwindcss from '@tailwindcss/vite'
-import { compression } from 'vite-plugin-compression2'
-import { defineConfig } from 'vite'
-import { resolve } from 'path'
+import react, { reactCompilerPreset } from '@vitejs/plugin-react';
+import babel from '@rolldown/plugin-babel';
+import tailwindcss from '@tailwindcss/vite';
+import { compression } from 'vite-plugin-compression2';
+import { defineConfig } from 'vite';
+import { resolve } from 'path';
 
 // https://vite.dev/config/
 // 注意:vitest 配置独立在 vitest.config.ts(vitest 内嵌的 vite 与 rolldown-vite 类型不兼容,故不共用 defineConfig)
 export default defineConfig({
-  plugins: [
-    react(),
-    babel({ presets: [reactCompilerPreset()] }),
-    tailwindcss(),
-    compression(),
-  ],
+  plugins: [react(), babel({ presets: [reactCompilerPreset()] }), tailwindcss(), compression()],
   // 端口保持 Vite 默认 5173,不额外指定
   server: {
     open: true,
@@ -46,14 +41,14 @@ export default defineConfig({
       output: {
         // 优化资源文件命名
         assetFileNames: (assetInfo) => {
-          const info = assetInfo.name?.split('.')
-          let extType = info?.[info.length - 1]
+          const info = assetInfo.name?.split('.');
+          let extType = info?.[info.length - 1];
           if (/\.(png|jpe?g|gif|svg|ico|webp)(\?.*)?$/.test(assetInfo.name ?? '')) {
-            extType = 'images'
+            extType = 'images';
           } else if (/\.(woff2?|ttf|otf)(\?.*)?$/.test(assetInfo.name ?? '')) {
-            extType = 'fonts'
+            extType = 'fonts';
           }
-          return `assets/${extType}/[name]-[hash][extname]`
+          return `assets/${extType}/[name]-[hash][extname]`;
         },
         // 优化 chunk 文件命名
         chunkFileNames: 'assets/js/[name]-[hash].js',
@@ -61,10 +56,10 @@ export default defineConfig({
         manualChunks(id) {
           // React 核心库单独分包,其余交 rolldown 默认分包
           if (id.includes('node_modules/react') || id.includes('node_modules/react-dom')) {
-            return 'vendor-react'
+            return 'vendor-react';
           }
         },
       },
     },
   },
-})
+});

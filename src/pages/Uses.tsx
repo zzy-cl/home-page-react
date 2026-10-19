@@ -1,18 +1,23 @@
-import { Link } from '@tanstack/react-router'
-import { useUiStore } from '@/store/ui'
-import { site } from '@/content/site'
-import { useSections } from '@/content/uses'
+import { Link } from '@tanstack/react-router';
+import { useUiStore } from '@/store/ui';
+import { site } from '@/content/site';
+import { useSections } from '@/content/uses';
 
 /** /uses(设计稿 uses.html):返回头 + 页头 + 分区卡,item 两栏结构 */
 function Uses() {
-  const openPalette = () => useUiStore.getState().setCommandOpen(true)
+  const openPalette = () => useUiStore.getState().setCommandOpen(true);
   return (
     <main className="page page-doc">
       <header className="doc-top">
         <Link className="back-link mono" to="/">
           ← {site.name}
         </Link>
-        <button className="kbd-hint kbd-hint--sm" type="button" onClick={openPalette} aria-label="打开全站指令面板(Ctrl+K)">
+        <button
+          className="kbd-hint kbd-hint--sm"
+          type="button"
+          onClick={openPalette}
+          aria-label="打开全站指令面板(Ctrl+K)"
+        >
           <kbd>Ctrl</kbd>
           <kbd>K</kbd>
         </button>
@@ -25,7 +30,12 @@ function Uses() {
 
       <div className="doc">
         {useSections.map((section, i) => (
-          <section key={section.title} className="card card--doc" style={{ '--i': i } as React.CSSProperties} aria-label={section.title}>
+          <section
+            key={section.title}
+            className="card card--doc"
+            style={{ '--i': i } as React.CSSProperties}
+            aria-label={section.title}
+          >
             <h2 className="doc-sec">{section.title}</h2>
             <ul className="item-list">
               {section.items.map((item) => (
@@ -39,7 +49,7 @@ function Uses() {
         ))}
       </div>
     </main>
-  )
+  );
 }
 
-export default Uses
+export default Uses;

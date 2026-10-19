@@ -1,13 +1,13 @@
-import { Link } from '@tanstack/react-router'
-import BentoCard from '@/components/BentoCard'
-import { site } from '@/content/site'
-import { projects } from '@/content/projects.data'
-import { useSections } from '@/content/uses'
-import Heatmap from '@/features/github/Heatmap'
-import { useContributions, useRepoStars } from '@/features/github/hooks'
-import HitokotoCard from '@/features/hitokoto/HitokotoCard'
-import { loadNowEntries } from '@/lib/md'
-import { useUiStore } from '@/store/ui'
+import { Link } from '@tanstack/react-router';
+import BentoCard from '@/components/BentoCard';
+import { site } from '@/content/site';
+import { projects } from '@/content/projects.data';
+import { useSections } from '@/content/uses';
+import Heatmap from '@/features/github/Heatmap';
+import { useContributions, useRepoStars } from '@/features/github/hooks';
+import HitokotoCard from '@/features/hitokoto/HitokotoCard';
+import { loadNowEntries } from '@/lib/md';
+import { useUiStore } from '@/store/ui';
 
 /*
  * 首页(设计稿 index.html 1:1):
@@ -15,21 +15,23 @@ import { useUiStore } from '@/store/ui'
  * 行3:   PROJECTS 4 | NOW 3 | USES 3 | 一言 2
  */
 function Home() {
-  const nowEntries = loadNowEntries()
-  const latest = nowEntries[0]
-  const { data: contributions } = useContributions()
-  const { data: stars } = useRepoStars()
-  const starsByRepo = new Map((stars ?? []).filter((s) => s.stars !== null).map((s) => [s.repo, s.stars]))
-  const openPalette = () => useUiStore.getState().setCommandOpen(true)
+  const nowEntries = loadNowEntries();
+  const latest = nowEntries[0];
+  const { data: contributions } = useContributions();
+  const { data: stars } = useRepoStars();
+  const starsByRepo = new Map(
+    (stars ?? []).filter((s) => s.stars !== null).map((s) => [s.repo, s.stars]),
+  );
+  const openPalette = () => useUiStore.getState().setCommandOpen(true);
 
   const nowSummary = latest
     ? latest.body.length > 96
       ? `${latest.body.slice(0, 96)}…`
       : latest.body
-    : null
+    : null;
   const usesPreview = useSections
     .flatMap((s) => s.items.slice(0, 1).map((i) => i.name))
-    .slice(0, 3)
+    .slice(0, 3);
 
   return (
     <main className="page page-home">
@@ -48,7 +50,12 @@ function Home() {
             ))}
           </ul>
           {/* 点击呼出面板:移动端无键盘,这是面板与终端的唯一入口 */}
-          <button className="kbd-hint" type="button" onClick={openPalette} aria-label="打开全站指令面板(Ctrl+K)">
+          <button
+            className="kbd-hint"
+            type="button"
+            onClick={openPalette}
+            aria-label="打开全站指令面板(Ctrl+K)"
+          >
             <kbd>Ctrl</kbd>
             <kbd>K</kbd>
             <span>全站指令</span>
@@ -67,7 +74,7 @@ function Home() {
         <BentoCard variant="projects" index={2} kicker="PROJECTS" label="精选项目">
           <ul className="proj-list" aria-label="精选项目列表">
             {projects.map((p) => {
-              const stars = p.repo ? starsByRepo.get(p.repo) : undefined
+              const stars = p.repo ? starsByRepo.get(p.repo) : undefined;
               const inner = (
                 <>
                   <span className="proj-main">
@@ -81,7 +88,7 @@ function Home() {
                     {stars ?? '--'}
                   </span>
                 </>
-              )
+              );
               return (
                 <li key={p.repo}>
                   {p.repo ? (
@@ -97,7 +104,7 @@ function Home() {
                     <div className="proj-row">{inner}</div>
                   )}
                 </li>
-              )
+              );
             })}
           </ul>
         </BentoCard>
@@ -130,7 +137,7 @@ function Home() {
         </BentoCard>
       </div>
     </main>
-  )
+  );
 }
 
-export default Home
+export default Home;

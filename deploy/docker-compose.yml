@@ -3,4 +3,4 @@ services:
     image: home-page:latest
     restart: unless-stopped
     ports:
-      - "5081:80"
+      - '5081:80'

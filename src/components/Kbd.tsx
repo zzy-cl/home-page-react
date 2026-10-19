@@ -1,4 +1,4 @@
-import type { ReactNode } from 'react'
+import type { ReactNode } from 'react';
 
 /** 键帽样式(Cmd+K 提示等) */
 export default function Kbd({ children }: { children: ReactNode }) {
@@ -13,5 +13,5 @@ export default function Kbd({ children }: { children: ReactNode }) {
     >
       {children}
     </kbd>
-  )
+  );
 }

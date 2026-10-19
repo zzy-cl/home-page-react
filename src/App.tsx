@@ -1,9 +1,9 @@
-import { lazy, Suspense } from 'react'
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
-import { RouterProvider } from '@tanstack/react-router'
-import { router } from '@/app/router'
-import { useGlobalHotkeys } from '@/app/hotkeys'
-import { useUiStore } from '@/store/ui'
+import { lazy, Suspense } from 'react';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { RouterProvider } from '@tanstack/react-router';
+import { router } from '@/app/router';
+import { useGlobalHotkeys } from '@/app/hotkeys';
+import { useUiStore } from '@/store/ui';
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -13,17 +13,17 @@ const queryClient = new QueryClient({
       refetchOnWindowFocus: false,
     },
   },
-})
+});
 
 // 彩蛋层动态加载(spec §6.4):按需条件挂载——首次触发才拉取 chunk。
 // 本文件不得静态 import 彩蛋组件(热键逻辑在 app/hotkeys.ts)。
-const CommandPalette = lazy(() => import('@/features/command/CommandPalette'))
-const Terminal = lazy(() => import('@/features/terminal/Terminal'))
+const CommandPalette = lazy(() => import('@/features/command/CommandPalette'));
+const Terminal = lazy(() => import('@/features/terminal/Terminal'));
 
 function Shell() {
-  useGlobalHotkeys()
-  const commandOpen = useUiStore((s) => s.commandOpen)
-  const terminalOpen = useUiStore((s) => s.terminalOpen)
+  useGlobalHotkeys();
+  const commandOpen = useUiStore((s) => s.commandOpen);
+  const terminalOpen = useUiStore((s) => s.terminalOpen);
 
   return (
     <>
@@ -39,7 +39,7 @@ function Shell() {
         </Suspense>
       )}
     </>
-  )
+  );
 }
 
 export default function App() {
@@ -47,5 +47,5 @@ export default function App() {
     <QueryClientProvider client={queryClient}>
       <Shell />
     </QueryClientProvider>
-  )
+  );
 }

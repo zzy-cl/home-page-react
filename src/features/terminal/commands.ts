@@ -1,21 +1,21 @@
 export interface TerminalLine {
-  kind: 'input' | 'output' | 'error'
-  text: string
+  kind: 'input' | 'output' | 'error';
+  text: string;
 }
 
 /** executeCommand 所需的站点快照(UI 层组装,纯函数只读) */
 export interface TerminalContext {
-  user: string
-  siteName: string
-  host: string
-  keywords: string[]
+  user: string;
+  siteName: string;
+  host: string;
+  keywords: string[];
   /** 构建时间戳(__BUILD_TIME__ 注入,ISO) */
-  buildTime: string
+  buildTime: string;
   /** 建站日期 YYYY-MM-DD(运行天数由此计算) */
-  siteStart: string
+  siteStart: string;
   /** 当前强调色(设计稿 neofetch 的 Accent 行) */
-  accentLabel: string
-  accentHex: string
+  accentLabel: string;
+  accentHex: string;
 }
 
 /**
@@ -28,12 +28,12 @@ export function shouldOpenTerminal(
   e: { key: string; target: unknown; ctrlKey?: boolean; metaKey?: boolean; altKey?: boolean },
   blocked: boolean,
 ): boolean {
-  if (e.key !== '~' && e.key !== '`') return false
-  if (blocked) return false
-  if (e.ctrlKey || e.metaKey || e.altKey) return false
-  const tag = (e.target as { tagName?: string } | null)?.tagName
-  if (typeof tag !== 'string') return false
-  return tag !== 'INPUT' && tag !== 'TEXTAREA'
+  if (e.key !== '~' && e.key !== '`') return false;
+  if (blocked) return false;
+  if (e.ctrlKey || e.metaKey || e.altKey) return false;
+  const tag = (e.target as { tagName?: string } | null)?.tagName;
+  if (typeof tag !== 'string') return false;
+  return tag !== 'INPUT' && tag !== 'TEXTAREA';
 }
 
 const HELP_LINES = [
@@ -44,66 +44,63 @@ const HELP_LINES = [
   '  neofetch         系统信息',
   '  clear            清屏',
   '  sudo rm -rf /    试试就知道 :)',
-]
+];
 
 function daysSince(start: string): string {
-  const ms = Date.now() - Date.parse(start)
-  if (!Number.isFinite(ms)) return 'N'
-  return String(Math.max(1, Math.ceil(ms / 86_400_000)))
+  const ms = Date.now() - Date.parse(start);
+  if (!Number.isFinite(ms)) return 'N';
+  return String(Math.max(1, Math.ceil(ms / 86_400_000)));
 }
 
 function pad(s: string, n: number): string {
-  let out = String(s)
-  while (out.length < n) out += ' '
-  return out
+  let out = String(s);
+  while (out.length < n) out += ' ';
+  return out;
 }
 
 /** skills 两列 ASCII 表(设计稿规格) */
 function skillsAscii(keywords: string[]): string {
-  const rows: Array<[string, string]> = []
+  const rows: Array<[string, string]> = [];
   for (let i = 0; i < keywords.length; i += 2) {
-    rows.push([keywords[i], keywords[i + 1] ?? ''])
+    rows.push([keywords[i], keywords[i + 1] ?? '']);
   }
-  const W1 = 12
-  const W2 = 14
+  const W1 = 12;
+  const W2 = 14;
   const bar = (l: string, m: string, r: string) =>
-    l + new Array(W1 + 1).join('─') + m + new Array(W2 + 1).join('─') + r
-  const out = [bar('┌', '┬', '┐')]
+    l + new Array(W1 + 1).join('─') + m + new Array(W2 + 1).join('─') + r;
+  const out = [bar('┌', '┬', '┐')];
   rows.forEach((r, i) => {
-    out.push(`│ ${pad(r[0], W1 - 1)}│ ${pad(r[1], W2 - 1)}│`)
-    if (i < rows.length - 1) out.push(bar('├', '┼', '┤'))
-  })
-  out.push(bar('└', '┴', '┘'))
-  return out.join('\n')
+    out.push(`│ ${pad(r[0], W1 - 1)}│ ${pad(r[1], W2 - 1)}│`);
+    if (i < rows.length - 1) out.push(bar('├', '┼', '┤'));
+  });
+  out.push(bar('└', '┴', '┘'));
+  return out.join('\n');
 }
 
 /** 执行终端命令。特殊信号:__CLEAR__ 清屏、__SHAKE__ 抖动(UI 层消费) */
 export function executeCommand(input: string, ctx: TerminalContext): TerminalLine[] {
-  const cmd = input.trim().toLowerCase()
-  if (!cmd) return []
+  const cmd = input.trim().toLowerCase();
+  if (!cmd) return [];
 
   const print = (text: string, kind: TerminalLine['kind'] = 'output'): TerminalLine => ({
     kind,
     text,
-  })
+  });
 
   // sudo 变体:任意同时包含 sudo 与 rm 的输入
   if (cmd.includes('sudo') && cmd.includes('rm')) {
-    return [
-      print('__SHAKE__'),
-      print('权限拒绝:这里是我的工位 :)', 'error'),
-    ]
+    return [print('__SHAKE__'), print('权限拒绝:这里是我的工位 :)', 'error')];
   }
 
   switch (cmd) {
     case 'help':
-      return HELP_LINES.map((l) => print(l))
+      return HELP_LINES.map((l) => print(l));
 
     case 'whoami':
-      return [print(`${ctx.user} —— 把想法变成代码的人`)]
+      return [print(`${ctx.user} —— 把想法变成代码的人`)];
 
     case 'skills':
-      return [print(skillsAscii(ctx.keywords))]
+      return [print(skillsAscii(ctx.keywords))];
 
     case 'neofetch':
       return [
@@ -115,12 +112,12 @@ export function executeCommand(input: string, ctx: TerminalContext): TerminalLin
         print('Shell:   monologue-sh 1.0'),
         print(`Build:   ${ctx.buildTime}`),
         print(`Accent:  ${ctx.accentLabel} ${ctx.accentHex}`),
-      ]
+      ];
 
     case 'clear':
-      return [print('__CLEAR__')]
+      return [print('__CLEAR__')];
 
     default:
-      return [print(`command not found: ${cmd},输入 help 查看可用命令`, 'error')]
+      return [print(`command not found: ${cmd},输入 help 查看可用命令`, 'error')];
   }
 }

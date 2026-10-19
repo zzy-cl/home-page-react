@@ -8,4 +8,4 @@ export const site = {
   email: '',
   /** ICP 备案号(国内服务器合规要求);托管迁出大陆后可清空,页脚将自动隐藏 */
   icp: '湘ICP备2022018737号-1',
-} as const
+} as const;

@@ -1,13 +1,13 @@
 /** /uses 清单(设计稿 uses.html 文案)。内容由站长随时替换。 */
 export interface UseItem {
-  name: string
+  name: string;
   /** 一句话使用语境 */
-  note: string
+  note: string;
 }
 
 export interface UseSection {
-  title: '硬件' | '编辑器与工具' | '技术栈' | '服务'
-  items: UseItem[]
+  title: '硬件' | '编辑器与工具' | '技术栈' | '服务';
+  items: UseItem[];
 }
 
 export const useSections: UseSection[] = [
@@ -40,4 +40,4 @@ export const useSections: UseSection[] = [
       { name: 'Jenkins', note: '自托管 CI,本站就是它部署的。' },
     ],
   },
-]
+];

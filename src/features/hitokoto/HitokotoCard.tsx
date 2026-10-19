@@ -1,9 +1,9 @@
-import { useState } from 'react'
-import { useQuery } from '@tanstack/react-query'
-import { quotes } from '@/content/quotes'
-import { fetchHitokoto } from './api'
+import { useState } from 'react';
+import { useQuery } from '@tanstack/react-query';
+import { quotes } from '@/content/quotes';
+import { fetchHitokoto } from './api';
 
-const FADE_MS = 160
+const FADE_MS = 160;
 
 /**
  * 一言卡(设计稿交互):
@@ -18,35 +18,38 @@ export default function HitokotoCard() {
     queryFn: fetchHitokoto,
     staleTime: 10 * 60 * 1000,
     retry: 1,
-  })
+  });
 
-  const [fallbackIdx, setFallbackIdx] = useState(0)
-  const [fading, setFading] = useState(false)
+  const [fallbackIdx, setFallbackIdx] = useState(0);
+  const [fading, setFading] = useState(false);
 
   const rotate = () => {
-    setFading(true)
+    setFading(true);
     setTimeout(() => {
       if (data) {
         // API 可用:再取一条
-        void refetch()
+        void refetch();
       } else {
         // API 不可用:语录池轮换(避开当前条)
         setFallbackIdx((i) => {
-          if (quotes.length < 2) return i
-          let next = i
-          while (next === i) next = Math.floor(Math.random() * quotes.length)
-          return next
-        })
+          if (quotes.length < 2) return i;
+          let next = i;
+          while (next === i) next = Math.floor(Math.random() * quotes.length);
+          return next;
+        });
       }
-      setFading(false)
-    }, FADE_MS)
-  }
+      setFading(false);
+    }, FADE_MS);
+  };
 
-  const quote = data ?? quotes[fallbackIdx]
+  const quote = data ?? quotes[fallbackIdx];
 
   return (
     <>
-      <figure className="quote-body" style={{ opacity: isFetching && !fading ? 0.4 : 1, transition: `opacity ${FADE_MS}ms` }}>
+      <figure
+        className="quote-body"
+        style={{ opacity: isFetching && !fading ? 0.4 : 1, transition: `opacity ${FADE_MS}ms` }}
+      >
         <blockquote style={{ opacity: fading ? 0 : 1 }}>{quote?.text}</blockquote>
         <figcaption>{quote?.from ? `—— ${quote.from}` : ''}</figcaption>
       </figure>
@@ -55,5 +58,5 @@ export default function HitokotoCard() {
         ↻ 换一条
       </span>
     </>
-  )
+  );
 }

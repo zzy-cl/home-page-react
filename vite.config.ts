@@ -33,8 +33,8 @@ export default defineConfig({
     terserOptions: {
       compress: {
         pure_funcs: ['console.log'],
-        // 开发期保留报错输出,上线前 Task 11 再开
-        drop_console: false,
+        // 生产环境移除全部 console(Task 11 收口)
+        drop_console: true,
         drop_debugger: true,
       },
     },

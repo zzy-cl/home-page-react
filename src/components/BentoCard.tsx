@@ -1,4 +1,3 @@
-import { motion } from 'motion/react'
 import type { ReactNode } from 'react'
 
 interface BentoCardProps {
@@ -10,39 +9,24 @@ interface BentoCardProps {
 }
 
 /**
- * Bento 卡片原语:玻璃材质 + 交错入场(spec §3.2)
- * 入场由父级 motion 容器的 staggerChildren 编排,单卡只声明 variants。
- * hover 仅 scale(1.01),transition 只作用于 transform —— 动画红线。
+ * Bento 卡片原语:玻璃材质 + 交错入场(spec §3.2)。
+ * 入场动画为纯 CSS(.bento-grid 内 nth-child 交错 delay),
+ * hover 仅 scale(1.01) —— 动画红线:只动 transform/opacity。
  */
 export default function BentoCard({ title, className = '', children }: BentoCardProps) {
   return (
-    <motion.section
-      className={`glass-card p-5 transition-transform duration-200 hover:scale-[1.01] ${className}`}
-      variants={{
-        hidden: { opacity: 0, y: 12 },
-        show: { opacity: 1, y: 0 },
-      }}
-    >
+    <section className={`glass-card bento-item p-5 transition-transform duration-200 hover:scale-[1.01] ${className}`}>
       {title && (
         <div className="mono mb-3 text-xs tracking-widest" style={{ color: 'var(--text-2)' }}>
           {title}
         </div>
       )}
       {children}
-    </motion.section>
+    </section>
   )
 }
 
-/** Bento 网格容器:统一编排交错入场(spec §4.1) */
+/** Bento 网格容器:子项交错入场由 CSS nth-child 编排(见 index.css) */
 export function BentoGrid({ children, className = '' }: { children: ReactNode; className?: string }) {
-  return (
-    <motion.div
-      className={className}
-      initial="hidden"
-      animate="show"
-      variants={{ hidden: {}, show: { transition: { staggerChildren: 0.06 } } }}
-    >
-      {children}
-    </motion.div>
-  )
+  return <div className={`bento-grid ${className}`}>{children}</div>
 }

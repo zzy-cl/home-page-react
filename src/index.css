@@ -26,7 +26,14 @@
   /* 文字 */
   --text-0: #e8eaed;
   --text-1: #9aa0a6;
-  --text-2: #5f6368;
+  --text-2: #6f7680;
+
+  /* 页面底:微弱径向渐变,深空感 */
+  --bg-glow: radial-gradient(
+    ellipse 80% 50% at 50% -10%,
+    rgba(122, 162, 255, 0.08),
+    transparent
+  );
 
   /* 字体 */
   --font-sans: 'HarmonyOS Sans SC', 'PingFang SC', 'Microsoft YaHei', sans-serif;
@@ -52,6 +59,8 @@ body {
   margin: 0;
   padding: 0;
   background-color: var(--bg-0);
+  background-image: var(--bg-glow);
+  background-repeat: no-repeat;
   color: var(--text-0);
   font-family: var(--font-sans);
   -webkit-font-smoothing: antialiased;

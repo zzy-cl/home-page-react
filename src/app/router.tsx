@@ -1,9 +1,9 @@
 import { createRootRoute, createRoute, createRouter } from '@tanstack/react-router';
 import RootLayout from './RootLayout';
-import { HomePage, UsesPage, NowPage } from './pages';
+import { HomePage, UsesPage, NowPage } from './lazyPages';
 
 // 本文件是纯路由表配置:只导出非组件值(routeTree/router),
-// 组件定义在 RootLayout.tsx 与 pages.ts(react-refresh/only-export-components)。
+// 组件定义在 RootLayout.tsx 与 lazyPages.ts(react-refresh/only-export-components)。
 
 const rootRoute = createRootRoute({ component: RootLayout });
 

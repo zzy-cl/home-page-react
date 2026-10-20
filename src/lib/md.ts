@@ -1,9 +1,17 @@
 /** /now 条目 */
 export interface NowEntry {
+  /** 文件名(去目录与 .md 后缀):列表渲染的稳定 key,同日多条目也不冲突 */
+  slug: string;
   /** YYYY-MM-DD */
   date: string;
   title: string;
   body: string;
+}
+
+/** 由 glob 模块路径取文件名作为 slug(:/src/content/now/2026-10-19-x.md → 2026-10-19-x) */
+export function slugFromPath(path: string): string {
+  const file = path.split('/').pop() ?? path;
+  return file.replace(/\.md$/i, '');
 }
 
 /**
@@ -45,9 +53,10 @@ export function parseFrontmatter(raw: string): { meta: Record<string, string>; b
 }
 
 /** 单篇 /now 条目解析:缺字段兜底空串,不抛错 */
-export function parseNowEntry(raw: string): NowEntry {
+export function parseNowEntry(raw: string, slug = ''): NowEntry {
   const { meta, body } = parseFrontmatter(raw);
   return {
+    slug,
     date: meta.date ?? '',
     title: meta.title ?? '',
     body,
@@ -59,7 +68,7 @@ export function sortNowEntries(entries: NowEntry[]): NowEntry[] {
   return [...entries].sort((a, b) => b.date.localeCompare(a.date));
 }
 
-/** 加载全部 /now 条目(vite 构建期收集,运行时零开销) */
+/** 加载全部 /now 条目(vite 构建期收集,运行时零开销);slug 取自文件名 */
 export function loadNowEntries(): NowEntry[] {
   const modules = import.meta.glob('@/content/now/*.md', {
     query: '?raw',
@@ -67,5 +76,7 @@ export function loadNowEntries(): NowEntry[] {
     eager: true,
   }) as Record<string, string>;
 
-  return sortNowEntries(Object.values(modules).map(parseNowEntry));
+  return sortNowEntries(
+    Object.entries(modules).map(([path, raw]) => parseNowEntry(raw, slugFromPath(path))),
+  );
 }

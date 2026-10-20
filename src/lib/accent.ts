@@ -16,12 +16,29 @@ export function accentOrder(): AccentKey[] {
   return ['blue', 'orange', 'violet'];
 }
 
+/** 类型守卫:任意字符串(含 localStorage / DOM 属性读回值)是否为合法强调色 */
+export function isAccentKey(value: string | null | undefined): value is AccentKey {
+  return !!value && Object.prototype.hasOwnProperty.call(ACCENTS, value);
+}
+
 /** 轮换下一色;非法 key 回退 blue */
 export function nextAccentKey(current: string): AccentKey {
   const order = accentOrder();
-  const idx = order.indexOf(current as AccentKey);
+  const idx = order.findIndex((k) => k === current);
   if (idx === -1) return 'blue';
   return order[(idx + 1) % order.length];
+}
+
+/** 当前生效的强调色 key(以 DOM 属性为准;无 DOM 的测试环境回退 blue) */
+export function currentAccentKey(): AccentKey {
+  if (typeof document === 'undefined') return 'blue';
+  const raw = document.documentElement.getAttribute('data-accent');
+  return isAccentKey(raw) ? raw : 'blue';
+}
+
+/** 当前强调色的名称与色值(终端 neofetch 展示用) */
+export function currentAccentConf(): (typeof ACCENTS)[AccentKey] {
+  return ACCENTS[currentAccentKey()];
 }
 
 const ACCENT_KEY = 'md-accent';
@@ -65,8 +82,8 @@ function applyDom(key: string, hex: string): void {
 
 /** 应用强调色;announce=true 时返回给人读的确认文案 */
 export function applyAccent(key: string, announce = false): string | null {
-  const conf = ACCENTS[key as AccentKey] ?? ACCENTS.blue;
-  const finalKey = ACCENTS[key as AccentKey] ? key : 'blue';
+  const finalKey: AccentKey = isAccentKey(key) ? key : 'blue';
+  const conf = ACCENTS[finalKey];
   safeSet(finalKey);
   applyDom(finalKey, conf.hex);
   return announce ? `强调色已切换 → ${conf.label} ${conf.hex}` : null;
@@ -75,7 +92,7 @@ export function applyAccent(key: string, announce = false): string | null {
 /** 启动恢复:读持久化 key 并应用,返回生效 key(main.tsx 调用一次) */
 export function restoreAccent(): AccentKey {
   const saved = safeGet();
-  const key: AccentKey = saved && ACCENTS[saved as AccentKey] ? (saved as AccentKey) : 'blue';
+  const key: AccentKey = isAccentKey(saved) ? saved : 'blue';
   applyDom(key, ACCENTS[key].hex);
   return key;
 }

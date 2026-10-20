@@ -1,6 +1,6 @@
 import { site } from '@/content/site';
-import { deriveStats, toHeatmapLevels } from './api';
-import type { ContributionYear } from './api';
+import { deriveStats, toHeatmapLevels } from './model';
+import type { ContributionYear } from './types';
 
 /** GitHub mark(lucide 1.x 移除品牌图标后的内联替代,官方 octicon path);对齐由 .link-accent 的 flex 承担 */
 function GithubMark({ size = 12 }: { size?: number }) {
@@ -14,16 +14,19 @@ function GithubMark({ size = 12 }: { size?: number }) {
 /**
  * GitHub 热力图(设计稿视觉):
  * 53 列 × 7 行固定 11px 格子、l1-l4 accent 色阶、future 近透明格、少→多图例。
- * data 为 null → 全灰占位(降级契约,Review Focus 1)。
+ * data 为 null → 灰色占位格 + 「—」占位数字(降级契约)。
+ * 本组件只依赖展示模型(model.ts),不发请求;取数在 useGithubData.ts。
  */
 export default function Heatmap({ data }: { data: ContributionYear | null }) {
-  const total = data?.total ?? 0;
+  // 降级态显示占位符而非 0,避免"0 次贡献"被误读为真实数据
+  const total = data?.total ?? null;
 
   // todayIndex:窗口最后一天的下标(其余为 future 近透明)
   const days =
     data?.days ?? Array.from({ length: 53 * 7 }, () => ({ date: '', count: 0, level: 0 as const }));
   const lastReal = days.reduce((acc, d, i) => (d.date ? i : acc), -1);
-  const levels = toHeatmapLevels(days, lastReal);
+  // 有数据时按 count 映射等级;降级态全部渲染为普通空格(而非 future 近透明)
+  const levels = data ? toHeatmapLevels(days, lastReal) : days.map(() => 0 as const);
   const stats = deriveStats(days);
 
   return (
@@ -32,7 +35,7 @@ export default function Heatmap({ data }: { data: ContributionYear | null }) {
         <div className="hm-stat">
           <span className="card-kicker">GITHUB</span>
           <p className="hm-total">
-            <strong className="hm-num mono">{total.toLocaleString()}</strong>
+            <strong className="hm-num mono">{total === null ? '—' : total.toLocaleString()}</strong>
             <span className="hm-unit">次贡献 / 年</span>
           </p>
         </div>
@@ -45,7 +48,11 @@ export default function Heatmap({ data }: { data: ContributionYear | null }) {
         <div
           className="hm-grid"
           role="img"
-          aria-label={`过去一年的 GitHub 贡献热力图,共 ${total} 次贡献`}
+          aria-label={
+            total === null
+              ? 'GitHub 贡献数据暂不可用'
+              : `过去一年的 GitHub 贡献热力图,共 ${total} 次贡献`
+          }
         >
           {days.map((d, i) => {
             const lv = levels[i];

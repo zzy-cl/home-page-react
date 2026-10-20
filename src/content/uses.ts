@@ -10,7 +10,8 @@ export interface UseSection {
   items: UseItem[];
 }
 
-export const useSections: UseSection[] = [
+/** 注意:这是常量数据,不是 hook(历史上曾用 use 前缀,已改名以符合命名契约) */
+export const usesSections: UseSection[] = [
   {
     title: '硬件',
     items: [{ name: '自组装台式机', note: '自己选件自己装,深夜工位的实体部分。' }],

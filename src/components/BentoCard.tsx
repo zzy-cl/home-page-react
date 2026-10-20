@@ -25,6 +25,9 @@ const VARIANT_CLASS: Record<BentoCardProps['variant'], string> = {
 /**
  * Bento 卡片原语:玻璃渐变 + 内高光 + hover accent 描边 + 交错入场。
  * 视觉规格来自 OpenDesign 设计稿(.card / .card-kicker)。
+ *
+ * 定位:UI 设计原语(非页面私有组件)。当前仅首页消费——新增第二个
+ * 非首页消费者之前,不要再把页面专属的卡片逻辑塞进这里。
  */
 export default function BentoCard({
   variant,

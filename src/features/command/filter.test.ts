@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import { filterCommands, type Command } from './registry';
+import type { Command, UiCommand } from '@/lib/command';
+import { filterCommands } from './filter';
 
 const cmds: Command[] = [
   { id: '1', title: '首页', keywords: ['home', 'index'], section: '导航', action: () => {} },
@@ -19,4 +20,14 @@ describe('filterCommands', () => {
   });
 
   it('无命中返回空数组', () => expect(filterCommands(cmds, 'zzz')).toEqual([]));
+
+  it('保留入参子类型:UiCommand 的 desc/hint 不会因过滤而丢失', () => {
+    const uiCmds: UiCommand[] = [
+      { ...cmds[0], desc: '回到 Bento 工位', hint: 'index' },
+      { ...cmds[1], desc: '硬件、工具与技术栈', hint: '/uses' },
+    ];
+    const out = filterCommands(uiCmds, 'uses');
+    expect(out[0].hint).toBe('/uses');
+    expect(typeof out[0].desc).toBe('string');
+  });
 });

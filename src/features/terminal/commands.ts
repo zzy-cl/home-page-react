@@ -1,3 +1,8 @@
+/**
+ * 终端命令解释器(纯函数:输入字符串 + 上下文 → 行数组,可直接单测)。
+ * `~` 热键判定在 hotkey.ts——热键属于终端交互,不属于命令解释。
+ */
+
 export interface TerminalLine {
   kind: 'input' | 'output' | 'error';
   text: string;
@@ -16,24 +21,6 @@ export interface TerminalContext {
   /** 当前强调色(设计稿 neofetch 的 Accent 行) */
   accentLabel: string;
   accentHex: string;
-}
-
-/**
- * `~`(或 `)键是否应打开终端(Review Focus 3):
- * 仅 ~ 或 `;按住 Ctrl/Cmd/Alt 不触发;input/textarea 聚焦、
- * 面板/终端已开(blocked)时不触发;target 未知时防御性不触发。
- * tagName 鸭子类型——避免引入 DOM 依赖,浏览器行为等价。
- */
-export function shouldOpenTerminal(
-  e: { key: string; target: unknown; ctrlKey?: boolean; metaKey?: boolean; altKey?: boolean },
-  blocked: boolean,
-): boolean {
-  if (e.key !== '~' && e.key !== '`') return false;
-  if (blocked) return false;
-  if (e.ctrlKey || e.metaKey || e.altKey) return false;
-  const tag = (e.target as { tagName?: string } | null)?.tagName;
-  if (typeof tag !== 'string') return false;
-  return tag !== 'INPUT' && tag !== 'TEXTAREA';
 }
 
 const HELP_LINES = [

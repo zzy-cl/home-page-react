@@ -1,116 +1,21 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { site } from '@/content/site';
-import { router } from '@/app/router';
-import { applyAccent, nextAccentKey } from '@/lib/accent';
-import { filterCommands } from './registry';
-import type { Command } from './registry';
+import { useEffect, useRef, useState } from 'react';
+import type { UiCommand } from '@/lib/command';
 import { useUiStore } from '@/store/ui';
+import { createCommands, type CommandNav } from './commands';
+import { filterCommands } from './filter';
 
 const PALETTE_HINT = '↑↓ 选择 · Enter 执行 · Esc 关闭';
 
-interface UiCommand extends Command {
-  desc: string;
-  hint: string;
-  /** 执行后面板保持打开(设计稿:主题切换需要看到 toast 反馈) */
-  keepOpen?: boolean;
+interface CommandPaletteProps {
+  /** 导航能力由应用外壳注入:面板挂在 RouterProvider 之外,拿不到 useNavigate */
+  navigate: CommandNav;
 }
 
-function buildCommands(toast: (msg: string) => void): UiCommand[] {
-  const cmds: UiCommand[] = [
-    {
-      id: 'nav-home',
-      title: '前往:首页',
-      desc: '回到 Bento 工位',
-      hint: 'index',
-      keywords: ['home', 'index', '首页', '工位', 'bento'],
-      section: '导航',
-      // 面板挂载在 RouterProvider 之外(全局浮层),用单例 router.navigate
-      // 而非 useNavigate——后者依赖 Router 上下文,此处拿不到(TanStack 1.170 起严格校验)
-      action: () => void router.navigate({ to: '/' }),
-    },
-    {
-      id: 'nav-uses',
-      title: '前往:装备清单',
-      desc: '硬件、工具与技术栈',
-      hint: '/uses',
-      keywords: ['uses', 'gear', '装备', '工具', '技术栈'],
-      section: '导航',
-      action: () => void router.navigate({ to: '/uses' }),
-    },
-    {
-      id: 'nav-now',
-      title: '前往:近况',
-      desc: '最近在折腾什么',
-      hint: '/now',
-      keywords: ['now', '近况', '动态'],
-      section: '导航',
-      action: () => void router.navigate({ to: '/now' }),
-    },
-    {
-      id: 'open-github',
-      title: '打开:GitHub',
-      desc: `github.com/${site.githubUser},新窗口打开`,
-      hint: '↗',
-      keywords: ['github', '仓库', '开源', site.githubUser],
-      section: '链接',
-      action: () => window.open(site.github, '_blank', 'noopener'),
-    },
-    {
-      id: 'theme-accent',
-      title: '切换强调色',
-      desc: '静谧蓝 → 暖橙 → 紫罗兰,立即全站生效',
-      hint: '蓝→橙→紫',
-      keywords: ['theme', 'accent', '主题', '颜色', '蓝', '橙', '紫'],
-      section: '主题',
-      keepOpen: true,
-      action: () => {
-        const current = document.documentElement.getAttribute('data-accent') ?? 'blue';
-        const next = nextAccentKey(current);
-        const msg = applyAccent(next, true);
-        if (msg) toast(msg);
-      },
-    },
-    {
-      id: 'terminal',
-      title: '终端模式',
-      desc: '极客彩蛋,输入 help 看看',
-      hint: '~',
-      keywords: ['terminal', '终端', 'shell', '彩蛋'],
-      section: '趣项',
-      action: () => useUiStore.getState().openTerminal(),
-    },
-    {
-      id: 'fun-quote',
-      title: '一言:来一条',
-      desc: '换一句话',
-      hint: '↻',
-      keywords: ['quote', '一言', 'hitokoto', '换'],
-      section: '趣项',
-      action: () => {
-        // 面板内 toast 反馈;一言卡在首页,若不在首页则先回去
-        void import('@/features/hitokoto/api').then(({ fetchHitokoto }) =>
-          fetchHitokoto().then((h) => toast(h ? `${h.text} —— ${h.from}` : '一言获取失败')),
-        );
-        if (window.location.pathname !== '/') void router.navigate({ to: '/' });
-      },
-    },
-  ];
-  // email 可选:site.email 未配置则不出现该命令
-  if (site.email) {
-    cmds.splice(4, 0, {
-      id: 'open-email',
-      title: '打开:Email',
-      desc: '来封邮件聊聊',
-      hint: '✉',
-      keywords: ['email', '邮件', '联系'],
-      section: '链接',
-      action: () => window.open(`mailto:${site.email}`, '_self'),
-    });
-  }
-  return cmds;
-}
-
-export default function CommandPalette() {
+/**
+ * 全站指令面板(仅负责搜索、键盘导航与渲染)。
+ * 命令表在 commands.ts(纯函数、可单测),本组件不再持有任何命令定义或副作用。
+ */
+export default function CommandPalette({ navigate }: CommandPaletteProps) {
   const setCommandOpen = useUiStore((s) => s.setCommandOpen);
   const inputRef = useRef<HTMLInputElement>(null);
   const lastFocus = useRef<HTMLElement | null>(null);
@@ -120,27 +25,23 @@ export default function CommandPalette() {
   const [toastMsg, setToastMsg] = useState<string>(PALETTE_HINT);
 
   // 面板内 toast 行:默认显示键位提示,命令反馈 2.6s 后回落(设计稿 palToast)。
-  // 定时回落由 effect 承担:连续 toast 经 cleanup 重置计时,卸载自动清理,
-  // toast 本身不含 ref(useMemo 中构建命令时传递才不会被视为渲染期读 ref)。
-  const toast = useCallback((msg: string) => setToastMsg(msg), []);
-
+  // 连续 toast 经 cleanup 重置计时,卸载自动清理。
   useEffect(() => {
     if (toastMsg === PALETTE_HINT) return;
     const timer = setTimeout(() => setToastMsg(PALETTE_HINT), 2600);
     return () => clearTimeout(timer);
   }, [toastMsg]);
 
-  const commands = useMemo(() => buildCommands(toast), [toast]);
-  const filtered = useMemo(
-    () => filterCommands(commands as Command[], query) as UiCommand[],
-    [commands, query],
-  );
+  // 命令表每次渲染重建(7 条,成本可忽略):
+  // 项目已启用 React Compiler,这里刻意不再手写 useMemo/useCallback。
+  const commands = createCommands({ navigate, toast: setToastMsg });
+  const filtered: UiCommand[] = filterCommands(commands, query);
 
   // 打开/关闭即挂载/卸载(App 仅在 commandOpen 时渲染本组件):
   // 挂载记录焦点并聚焦输入,卸载恢复打开前焦点(设计稿 openPalette/closeOverlay)。
-  // 输入/选中/提示在每次挂载时天然重置,无需 effect 内同步 setState。
   useEffect(() => {
-    lastFocus.current = document.activeElement as HTMLElement | null;
+    lastFocus.current =
+      document.activeElement instanceof HTMLElement ? document.activeElement : null;
     try {
       inputRef.current?.focus({ preventScroll: true });
     } catch {
@@ -160,18 +61,15 @@ export default function CommandPalette() {
 
   // 执行命令。keepOpen 命令(如主题切换)的"焦点还给输入框"由事件回调
   // 在调用后内联完成——ref 只允许在事件/副作用中直接读取(react-hooks/refs)
-  const execute = useCallback(
-    (cmd: UiCommand | undefined) => {
-      if (!cmd) return;
-      if (!cmd.keepOpen) setCommandOpen(false);
-      else {
-        setQuery('');
-        setActive(0);
-      }
-      cmd.action();
-    },
-    [setCommandOpen],
-  );
+  const execute = (cmd: UiCommand | undefined) => {
+    if (!cmd) return;
+    if (!cmd.keepOpen) setCommandOpen(false);
+    else {
+      setQuery('');
+      setActive(0);
+    }
+    cmd.action();
+  };
 
   const onKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === 'ArrowDown') {
@@ -192,15 +90,12 @@ export default function CommandPalette() {
   };
 
   // 按 section 分组;顺带记录全局索引供高亮
-  const sections = useMemo(() => {
-    const map = new Map<string, Array<{ cmd: UiCommand; idx: number }>>();
-    filtered.forEach((cmd, idx) => {
-      const list = map.get(cmd.section) ?? [];
-      list.push({ cmd, idx });
-      map.set(cmd.section, list);
-    });
-    return [...map.entries()];
-  }, [filtered]);
+  const sections = new Map<string, Array<{ cmd: UiCommand; idx: number }>>();
+  filtered.forEach((cmd, idx) => {
+    const list = sections.get(cmd.section) ?? [];
+    list.push({ cmd, idx });
+    sections.set(cmd.section, list);
+  });
 
   return (
     <div
@@ -234,7 +129,7 @@ export default function CommandPalette() {
           {filtered.length === 0 ? (
             <div className="palette-empty">没有匹配的命令,试试 help / theme / go</div>
           ) : (
-            sections.map(([section, list]) => (
+            [...sections.entries()].map(([section, list]) => (
               <div key={section}>
                 <div className="group-label">{section}</div>
                 {list.map(({ cmd, idx }) => (

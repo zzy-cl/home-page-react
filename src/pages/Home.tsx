@@ -2,9 +2,9 @@ import { Link } from '@tanstack/react-router';
 import BentoCard from '@/components/BentoCard';
 import { site } from '@/content/site';
 import { projects } from '@/content/projects.data';
-import { useSections } from '@/content/uses';
+import { usesSections } from '@/content/uses';
 import Heatmap from '@/features/github/Heatmap';
-import { useContributions, useRepoStars } from '@/features/github/hooks';
+import { useContributions, useRepoStars } from '@/features/github/useGithubData';
 import HitokotoCard from '@/features/hitokoto/HitokotoCard';
 import { loadNowEntries } from '@/lib/md';
 import { useUiStore } from '@/store/ui';
@@ -29,7 +29,7 @@ function Home() {
       ? `${latest.body.slice(0, 96)}…`
       : latest.body
     : null;
-  const usesPreview = useSections
+  const usesPreview = usesSections
     .flatMap((s) => s.items.slice(0, 1).map((i) => i.name))
     .slice(0, 3);
 

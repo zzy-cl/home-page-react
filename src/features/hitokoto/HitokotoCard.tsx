@@ -1,7 +1,6 @@
-import { useState } from 'react';
-import { useQuery } from '@tanstack/react-query';
+import { useEffect, useRef, useState } from 'react';
 import { quotes } from '@/content/quotes';
-import { fetchHitokoto } from './api';
+import { useHitokoto } from './useHitokoto';
 
 const FADE_MS = 160;
 
@@ -12,20 +11,26 @@ const FADE_MS = 160;
  * 实时 API 优先,失败时从内置语录池轮换(池末条即固定降级句)。
  */
 export default function HitokotoCard() {
-  // API 一言(成功时优先展示)
-  const { data, refetch, isFetching } = useQuery({
-    queryKey: ['hitokoto'],
-    queryFn: fetchHitokoto,
-    staleTime: 10 * 60 * 1000,
-    retry: 1,
-  });
+  // API 一言(成功时优先展示);查询逻辑在 useHitokoto
+  const { data, refetch, isFetching } = useHitokoto();
 
   const [fallbackIdx, setFallbackIdx] = useState(0);
   const [fading, setFading] = useState(false);
+  const fadeTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  // 卸载时清理未完成的淡出定时器,避免对已卸载组件 setState / refetch
+  useEffect(
+    () => () => {
+      if (fadeTimer.current) clearTimeout(fadeTimer.current);
+    },
+    [],
+  );
 
   const rotate = () => {
     setFading(true);
-    setTimeout(() => {
+    if (fadeTimer.current) clearTimeout(fadeTimer.current);
+    fadeTimer.current = setTimeout(() => {
+      fadeTimer.current = null;
       if (data) {
         // API 可用:再取一条
         void refetch();

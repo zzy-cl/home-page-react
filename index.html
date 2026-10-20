@@ -3,13 +3,11 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
-    <meta
-      name="description"
-      content="呓语小屋——一个前端开发者的个人主页。Vue3 · React · Rust · TypeScript · AI · Vibe Coding。"
-    />
+    <!-- 站点身份由 vite.config.ts 的 site-meta 插件从 src/content/site.ts 注入 -->
+    <meta name="description" content="__SITE_DESCRIPTION__" />
     <meta name="theme-color" content="#0d0f12" />
     <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
-    <title>呓语小屋 · 把想法变成代码的人</title>
+    <title>__SITE_TITLE__</title>
     <!-- 强调色防闪烁:渲染前恢复持久化选择 -->
     <script>
       try {

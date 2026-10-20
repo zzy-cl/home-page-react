@@ -2,13 +2,38 @@ import react, { reactCompilerPreset } from '@vitejs/plugin-react';
 import babel from '@rolldown/plugin-babel';
 import tailwindcss from '@tailwindcss/vite';
 import { compression } from 'vite-plugin-compression2';
-import { defineConfig } from 'vite';
+import { defineConfig, type Plugin } from 'vite';
 import { resolve } from 'path';
+import { site } from './src/content/site.ts';
+
+/**
+ * 站点身份注入:title / description 的唯一真相源是 src/content/site.ts,
+ * index.html 只保留 __SITE_TITLE__ / __SITE_DESCRIPTION__ 占位符。
+ * 改名/换 tagline 时不需要再同步 HTML。
+ */
+function siteMeta(): Plugin {
+  const title = `${site.name} · ${site.tagline}`;
+  const description = `${site.name}——${site.tagline}。${site.keywords.join(' · ')}。`;
+  return {
+    name: 'site-meta',
+    transformIndexHtml(html) {
+      return html
+        .replaceAll('__SITE_TITLE__', title)
+        .replaceAll('__SITE_DESCRIPTION__', description);
+    },
+  };
+}
 
 // https://vite.dev/config/
 // 注意:vitest 配置独立在 vitest.config.ts(vitest 内嵌的 vite 与 rolldown-vite 类型不兼容,故不共用 defineConfig)
 export default defineConfig({
-  plugins: [react(), babel({ presets: [reactCompilerPreset()] }), tailwindcss(), compression()],
+  plugins: [
+    react(),
+    babel({ presets: [reactCompilerPreset()] }),
+    tailwindcss(),
+    compression(),
+    siteMeta(),
+  ],
   // 端口保持 Vite 默认 5173,不额外指定
   server: {
     open: true,

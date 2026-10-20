@@ -3,12 +3,15 @@ import { site } from '@/content/site';
 import { projects } from '@/content/projects.data';
 import { fetchContributions, fetchRepoStars } from './api';
 
+/** 限流窗口:无认证 GitHub API 为 60 req/h,1h 内不重复请求(唯一出处) */
+const STALE_ONE_HOUR = 60 * 60 * 1000;
+
 /** 一年贡献热力图数据;失败时 data 为 null → UI 渲染占位 */
 export function useContributions() {
   return useQuery({
     queryKey: ['gh-contrib', site.githubUser],
     queryFn: () => fetchContributions(site.githubUser),
-    staleTime: 60 * 60 * 1000, // 1h:无认证 60 req/h,主动限流
+    staleTime: STALE_ONE_HOUR,
     retry: 1,
   });
 }
@@ -25,7 +28,7 @@ export function useRepoStars() {
           stars: await fetchRepoStars(p.repo),
         })),
       ),
-    staleTime: 60 * 60 * 1000,
+    staleTime: STALE_ONE_HOUR,
     retry: 1,
   });
 }

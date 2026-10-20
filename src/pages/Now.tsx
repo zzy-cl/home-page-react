@@ -39,7 +39,8 @@ function Now() {
         ) : (
           entries.map((entry, i) => (
             <article
-              key={`${entry.date}-${i}`}
+              // slug 来自文件名(构建期唯一),同日多条条目也不会 key 冲突
+              key={entry.slug}
               className="card card--doc entry"
               style={{ '--i': i } as React.CSSProperties}
             >

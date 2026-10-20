@@ -1,7 +1,7 @@
 import { Link } from '@tanstack/react-router';
 import { useUiStore } from '@/store/ui';
 import { site } from '@/content/site';
-import { useSections } from '@/content/uses';
+import { usesSections } from '@/content/uses';
 
 /** /uses(设计稿 uses.html):返回头 + 页头 + 分区卡,item 两栏结构 */
 function Uses() {
@@ -29,7 +29,7 @@ function Uses() {
       </header>
 
       <div className="doc">
-        {useSections.map((section, i) => (
+        {usesSections.map((section, i) => (
           <section
             key={section.title}
             className="card card--doc"
